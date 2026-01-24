@@ -1,0 +1,13 @@
+# Penciled.fyi Robots.txt
+# https://penciled.fyi
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /onboarding/
+Disallow: /booking/*/manage
+Disallow: /booking/*/reschedule
+
+# Sitemap
+Sitemap: https://penciled.fyi/sitemap.xml
