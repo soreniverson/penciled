@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
-      .from('LOGOS')
+      .from('logos')
       .upload(filename, buffer, {
         upsert: true,
         contentType: file.type,
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('LOGOS')
+      .from('logos')
       .getPublicUrl(filename)
 
     // Update provider record with logo URL
@@ -91,9 +91,9 @@ export async function DELETE(request: Request) {
 
     if (provider?.logo_url) {
       // Extract filename from URL
-      const urlParts = provider.logo_url.split('/LOGOS/')
+      const urlParts = provider.logo_url.split('/logos/')
       if (urlParts[1]) {
-        await supabase.storage.from('LOGOS').remove([urlParts[1]])
+        await supabase.storage.from('logos').remove([urlParts[1]])
       }
     }
 
