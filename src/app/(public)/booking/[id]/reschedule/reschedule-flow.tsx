@@ -124,15 +124,16 @@ export function RescheduleFlow({ booking, provider, service, availability, token
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-sm bg-background/80">
         <div className="max-w-xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            {provider.logo_url && (
+          <div className={`flex items-center ${provider.logo_url ? 'justify-center' : ''}`}>
+            {provider.logo_url ? (
               <img
                 src={provider.logo_url}
                 alt={provider.business_name || 'Logo'}
-                className="h-8 w-auto object-contain"
+                className="h-6 w-auto object-contain"
               />
+            ) : (
+              <h1 className="text-lg font-semibold">{provider.business_name}</h1>
             )}
-            <h1 className="text-lg font-semibold">{provider.business_name}</h1>
           </div>
         </div>
       </header>
