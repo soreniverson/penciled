@@ -12,7 +12,7 @@ const ContentSecurityPolicy = `
   connect-src 'self' https://*.supabase.co https://plausible.io https://api.resend.com;
   frame-ancestors 'none';
   base-uri 'self';
-  form-action 'self';
+  form-action 'self' https://accounts.google.com;
   upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim()
 
