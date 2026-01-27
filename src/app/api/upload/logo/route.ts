@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -35,8 +36,11 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
+    // Use admin client for storage (bypasses RLS)
+    const adminClient = createAdminClient()
+
     // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminClient.storage
       .from('logos')
       .upload(filename, buffer, {
         upsert: true,
@@ -49,14 +53,13 @@ export async function POST(request: Request) {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = adminClient.storage
       .from('logos')
       .getPublicUrl(filename)
 
     // Update provider record with logo URL
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminClient
       .from('providers')
-      // @ts-expect-error - logo_url column exists but not in generated types
       .update({ logo_url: publicUrl })
       .eq('id', user.id)
 
@@ -81,26 +84,26 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const adminClient = createAdminClient()
+
     // Get current logo URL to determine filename
-    const { data: provider } = await supabase
+    const { data: provider } = await adminClient
       .from('providers')
       .select('logo_url')
       .eq('id', user.id)
       .single()
-      .then(res => ({ ...res, data: res.data as { logo_url: string | null } | null }))
 
     if (provider?.logo_url) {
       // Extract filename from URL
       const urlParts = provider.logo_url.split('/logos/')
       if (urlParts[1]) {
-        await supabase.storage.from('logos').remove([urlParts[1]])
+        await adminClient.storage.from('logos').remove([urlParts[1]])
       }
     }
 
     // Clear logo URL from provider record
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminClient
       .from('providers')
-      // @ts-expect-error - logo_url column exists but not in generated types
       .update({ logo_url: null })
       .eq('id', user.id)
 
