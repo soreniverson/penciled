@@ -17,7 +17,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { generateSlug } from '@/lib/utils'
-import { Loader2, Check, ExternalLink, LogOut } from 'lucide-react'
+import { Loader2, Check, ExternalLink, LogOut, Upload, X, ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { Provider } from '@/types/database'
 
@@ -49,6 +49,8 @@ export default function SettingsPage() {
   const [slug, setSlug] = useState('')
   const [timezone, setTimezone] = useState('')
   const [collectPhone, setCollectPhone] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
 
@@ -73,6 +75,7 @@ export default function SettingsPage() {
         setSlug(data.slug || '')
         setTimezone(data.timezone || '')
         setCollectPhone(data.collect_phone ?? false)
+        setLogoUrl(data.logo_url || null)
         setSlugAvailable(true)
       }
 
@@ -106,6 +109,58 @@ export default function SettingsPage() {
     const debounce = setTimeout(checkSlug, 500)
     return () => clearTimeout(debounce)
   }, [slug, provider])
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingLogo(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload/logo', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to upload logo')
+      }
+
+      const { url } = await response.json()
+      setLogoUrl(url)
+    } catch (error) {
+      console.error('Logo upload error:', error)
+      alert(error instanceof Error ? error.message : 'Failed to upload logo')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  const handleLogoRemove = async () => {
+    setUploadingLogo(true)
+
+    try {
+      const response = await fetch('/api/upload/logo', {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to remove logo')
+      }
+
+      setLogoUrl(null)
+    } catch (error) {
+      console.error('Logo remove error:', error)
+      alert(error instanceof Error ? error.message : 'Failed to remove logo')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!provider || !slugAvailable) return
@@ -213,6 +268,61 @@ export default function SettingsPage() {
               placeholder="Your business name"
             />
           </div>
+          <div className="space-y-2">
+            <Label>Logo</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Displayed on your booking page. Max 2MB.
+            </p>
+            <div className="flex items-center gap-4">
+              {logoUrl ? (
+                <div className="relative">
+                  <img
+                    src={logoUrl}
+                    alt="Business logo"
+                    className="size-16 rounded-lg object-contain bg-muted"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleLogoRemove}
+                    disabled={uploadingLogo}
+                    className="absolute -top-2 -right-2 size-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="size-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                  <ImageIcon className="size-6 text-muted-foreground/50" />
+                </div>
+              )}
+              <label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={uploadingLogo}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingLogo}
+                  asChild
+                >
+                  <span className="cursor-pointer">
+                    {uploadingLogo ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="size-4 mr-2" />
+                    )}
+                    {logoUrl ? 'Change' : 'Upload'}
+                  </span>
+                </Button>
+              </label>
+            </div>
+          </div>
+          <Separator />
           <div className="space-y-2">
             <Label htmlFor="timezone">Timezone</Label>
             <Select value={timezone} onValueChange={setTimezone}>

@@ -18,6 +18,7 @@ export type Database = {
           business_category: string | null
           timezone: string
           avatar_url: string | null
+          logo_url: string | null
           slug: string | null
           plan: 'free' | 'paid'
           collect_phone: boolean
@@ -35,6 +36,7 @@ export type Database = {
           business_category?: string | null
           timezone?: string
           avatar_url?: string | null
+          logo_url?: string | null
           slug?: string | null
           plan?: 'free' | 'paid'
           collect_phone?: boolean
@@ -52,6 +54,7 @@ export type Database = {
           business_category?: string | null
           timezone?: string
           avatar_url?: string | null
+          logo_url?: string | null
           slug?: string | null
           plan?: 'free' | 'paid'
           collect_phone?: boolean

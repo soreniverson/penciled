@@ -213,8 +213,8 @@ export default function AvailabilityPage() {
         <CardContent className="py-4 divide-y divide-border">
           {DAYS.map((day) => (
             <div key={day.value} className="py-3 first:pt-0 last:pb-0">
-              <div className="flex items-start gap-4">
-                <div className="flex items-center gap-3 w-24 pt-1">
+              <div className="flex items-center gap-4 min-h-10">
+                <div className="flex items-center gap-3 w-28 shrink-0">
                   <Switch
                     checked={availability[day.value].enabled}
                     onCheckedChange={(checked) => toggleDay(day.value, checked)}
@@ -224,14 +224,14 @@ export default function AvailabilityPage() {
                   </span>
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 flex items-center">
                   {availability[day.value].enabled ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 w-full">
                       {availability[day.value].windows.map((window, windowIndex) => (
                         <div key={windowIndex} className="flex items-center gap-2">
                           <Input
                             type="time"
-                            className="w-32"
+                            className="w-[120px]"
                             value={window.startTime}
                             onChange={(e) =>
                               updateWindow(day.value, windowIndex, { startTime: e.target.value })
@@ -240,7 +240,7 @@ export default function AvailabilityPage() {
                           <span className="text-muted-foreground">–</span>
                           <Input
                             type="time"
-                            className="w-32"
+                            className="w-[120px]"
                             value={window.endTime}
                             onChange={(e) =>
                               updateWindow(day.value, windowIndex, { endTime: e.target.value })
@@ -270,7 +270,7 @@ export default function AvailabilityPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground pt-1">Unavailable</p>
+                    <span className="text-sm text-muted-foreground">Unavailable</span>
                   )}
                 </div>
               </div>

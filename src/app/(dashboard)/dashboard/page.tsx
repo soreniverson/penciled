@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, ExternalLink, Clock, Mail, User } from 'lucide-react'
 import { format, isToday, isTomorrow, isThisWeek } from 'date-fns'
@@ -66,25 +66,20 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      {/* Booking Link */}
-      {bookingPageUrl && (
-        <Card>
-          <CardContent className="py-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-muted-foreground mb-1">Your booking link</p>
-              <code className="text-sm break-all">{bookingPageUrl}</code>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <CopyButton text={bookingPageUrl} />
-              <Link href={`/book/${provider?.slug}`} target="_blank">
-                <Button variant="outline" size="sm" className="gap-1">
-                  Open <ExternalLink className="size-3" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Bookings</h1>
+        {bookingPageUrl && (
+          <div className="flex gap-2">
+            <CopyButton text={bookingPageUrl} />
+            <Link href={`/book/${provider?.slug}`} target="_blank">
+              <Button variant="outline" size="sm" className="gap-1">
+                Open <ExternalLink className="size-3" />
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
 
       {/* Upcoming Bookings */}
       <div className="space-y-3">

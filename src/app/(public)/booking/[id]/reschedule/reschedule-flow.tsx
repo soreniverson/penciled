@@ -9,7 +9,7 @@ import { formatDuration } from '@/lib/utils'
 import { generateTimeSlots, getAvailableDates, type TimeSlot } from '@/lib/availability'
 import type { Provider, Service, Availability, Booking } from '@/types/database'
 import { format, startOfDay, endOfDay } from 'date-fns'
-import { Clock, ArrowLeft, Check, Loader2, ChevronRight, CalendarDays } from 'lucide-react'
+import { Clock, ArrowLeft, Check, Loader2, CalendarDays } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import Link from 'next/link'
 
@@ -124,15 +124,15 @@ export function RescheduleFlow({ booking, provider, service, availability, token
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-sm bg-background/80">
         <div className="max-w-xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">{provider.business_name}</h1>
-            {step !== 'confirmation' && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span className={step === 'date' ? 'text-foreground font-medium' : ''}>Date</span>
-                <ChevronRight className="size-3 mx-1" />
-                <span className={step === 'time' ? 'text-foreground font-medium' : ''}>Time</span>
-              </div>
+          <div className="flex items-center gap-3">
+            {provider.logo_url && (
+              <img
+                src={provider.logo_url}
+                alt={provider.business_name || 'Logo'}
+                className="h-8 w-auto object-contain"
+              />
             )}
+            <h1 className="text-lg font-semibold">{provider.business_name}</h1>
           </div>
         </div>
       </header>
