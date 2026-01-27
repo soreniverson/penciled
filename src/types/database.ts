@@ -154,6 +154,7 @@ export type Database = {
           cancelled_at: string | null
           cancellation_reason: string | null
           management_token: string | null
+          booking_link_id: string | null
           created_at: string
           updated_at: string
         }
@@ -172,6 +173,7 @@ export type Database = {
           cancelled_at?: string | null
           cancellation_reason?: string | null
           management_token?: string | null
+          booking_link_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -190,8 +192,107 @@ export type Database = {
           cancelled_at?: string | null
           cancellation_reason?: string | null
           management_token?: string | null
+          booking_link_id?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      blackout_dates: {
+        Row: {
+          id: string
+          provider_id: string
+          start_date: string
+          end_date: string
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          provider_id: string
+          start_date: string
+          end_date: string
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          provider_id?: string
+          start_date?: string
+          end_date?: string
+          reason?: string | null
+          created_at?: string
+        }
+      }
+      booking_links: {
+        Row: {
+          id: string
+          owner_id: string
+          name: string
+          slug: string
+          description: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          name: string
+          slug: string
+          description?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      booking_link_members: {
+        Row: {
+          id: string
+          booking_link_id: string
+          provider_id: string
+          is_required: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          booking_link_id: string
+          provider_id: string
+          is_required?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          booking_link_id?: string
+          provider_id?: string
+          is_required?: boolean
+          created_at?: string
+        }
+      }
+      booking_link_services: {
+        Row: {
+          id: string
+          booking_link_id: string
+          service_id: string
+        }
+        Insert: {
+          id?: string
+          booking_link_id: string
+          service_id: string
+        }
+        Update: {
+          id?: string
+          booking_link_id?: string
+          service_id?: string
         }
       }
     }
@@ -211,13 +312,23 @@ export type Provider = Database['public']['Tables']['providers']['Row']
 export type Service = Database['public']['Tables']['services']['Row']
 export type Availability = Database['public']['Tables']['availability']['Row']
 export type Booking = Database['public']['Tables']['bookings']['Row']
+export type BlackoutDate = Database['public']['Tables']['blackout_dates']['Row']
+export type BookingLink = Database['public']['Tables']['booking_links']['Row']
+export type BookingLinkMember = Database['public']['Tables']['booking_link_members']['Row']
+export type BookingLinkService = Database['public']['Tables']['booking_link_services']['Row']
 
 export type InsertProvider = Database['public']['Tables']['providers']['Insert']
 export type InsertService = Database['public']['Tables']['services']['Insert']
 export type InsertAvailability = Database['public']['Tables']['availability']['Insert']
 export type InsertBooking = Database['public']['Tables']['bookings']['Insert']
+export type InsertBlackoutDate = Database['public']['Tables']['blackout_dates']['Insert']
+export type InsertBookingLink = Database['public']['Tables']['booking_links']['Insert']
+export type InsertBookingLinkMember = Database['public']['Tables']['booking_link_members']['Insert']
+export type InsertBookingLinkService = Database['public']['Tables']['booking_link_services']['Insert']
 
 export type UpdateProvider = Database['public']['Tables']['providers']['Update']
 export type UpdateService = Database['public']['Tables']['services']['Update']
 export type UpdateAvailability = Database['public']['Tables']['availability']['Update']
 export type UpdateBooking = Database['public']['Tables']['bookings']['Update']
+export type UpdateBlackoutDate = Database['public']['Tables']['blackout_dates']['Update']
+export type UpdateBookingLink = Database['public']['Tables']['booking_links']['Update']

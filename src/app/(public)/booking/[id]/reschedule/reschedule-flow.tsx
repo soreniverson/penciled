@@ -1,17 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDuration } from '@/lib/utils'
-import { generateTimeSlots, getAvailableDates, type TimeSlot } from '@/lib/availability'
+import { getAvailableDates, type TimeSlot } from '@/lib/availability'
 import type { Provider, Service, Availability, Booking } from '@/types/database'
-import { format, startOfDay, endOfDay } from 'date-fns'
+import { format } from 'date-fns'
 import { Clock, ArrowLeft, Check, Loader2, CalendarDays } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import Link from 'next/link'
+
+type BlackoutDateRange = {
+  start_date: string
+  end_date: string
+}
 
 type Props = {
   booking: Booking
@@ -32,42 +37,64 @@ export function RescheduleFlow({ booking, provider, service, availability, token
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [blackoutDates, setBlackoutDates] = useState<BlackoutDateRange[]>([])
 
-  const availableDates = getAvailableDates(availability, provider.timezone)
+  // Fetch blackout dates on mount
+  useEffect(() => {
+    const fetchBlackoutDates = async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('blackout_dates')
+        .select('start_date, end_date')
+        .eq('provider_id', provider.id)
+
+      if (data) {
+        setBlackoutDates(data)
+      }
+    }
+
+    fetchBlackoutDates()
+  }, [provider.id])
+
+  const availableDates = useMemo(() => {
+    return getAvailableDates(availability, provider.timezone, 60, blackoutDates)
+  }, [availability, provider.timezone, blackoutDates])
 
   useEffect(() => {
     if (!selectedDate) return
 
     const fetchSlots = async () => {
       setLoadingSlots(true)
-      const supabase = createClient()
 
-      const dayStart = startOfDay(selectedDate)
-      const dayEnd = endOfDay(selectedDate)
+      try {
+        const response = await fetch(
+          `/api/availability/slots?provider_id=${provider.id}&service_id=${service.id}&date=${selectedDate.toISOString()}&exclude_booking_id=${booking.id}`
+        )
 
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('start_time, end_time, status')
-        .eq('provider_id', provider.id)
-        .neq('status', 'cancelled')
-        .neq('id', booking.id) // Exclude current booking
-        .gte('start_time', dayStart.toISOString())
-        .lte('start_time', dayEnd.toISOString())
+        if (!response.ok) {
+          throw new Error('Failed to fetch availability')
+        }
 
-      const slots = generateTimeSlots(
-        selectedDate,
-        availability,
-        service,
-        bookings || [],
-        provider.timezone
-      )
+        const { slots: apiSlots } = await response.json()
 
-      setTimeSlots(slots)
-      setLoadingSlots(false)
+        // Convert ISO strings back to Date objects for TimeSlot format
+        const slots = apiSlots.map((slot: { start: string; end: string; available: boolean }) => ({
+          start: new Date(slot.start),
+          end: new Date(slot.end),
+          available: slot.available,
+        }))
+
+        setTimeSlots(slots)
+      } catch (error) {
+        console.error('Error fetching slots:', error)
+        setTimeSlots([])
+      } finally {
+        setLoadingSlots(false)
+      }
     }
 
     fetchSlots()
-  }, [selectedDate, availability, provider, service, booking.id])
+  }, [selectedDate, provider.id, service.id, booking.id])
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)

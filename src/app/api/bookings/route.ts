@@ -8,7 +8,7 @@ import {
 } from '@/lib/email'
 import { parseBody, createBookingSchema } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { createCalendarEvent } from '@/lib/google-calendar'
+import { createCalendarEvent, getCalendarBusyTimes } from '@/lib/google-calendar'
 import { logApiError } from '@/lib/error-logger'
 
 export async function POST(request: Request) {
@@ -56,6 +56,24 @@ export async function POST(request: Request) {
     if (conflicts && conflicts.length > 0) {
       return NextResponse.json(
         { error: 'This time slot is no longer available' },
+        { status: 409 }
+      )
+    }
+
+    // Check Google Calendar conflicts
+    const busyTimes = await getCalendarBusyTimes(
+      provider_id,
+      new Date(start_time),
+      new Date(end_time)
+    )
+
+    const hasCalendarConflict = busyTimes.some(busy =>
+      new Date(busy.start) < new Date(end_time) && new Date(busy.end) > new Date(start_time)
+    )
+
+    if (hasCalendarConflict) {
+      return NextResponse.json(
+        { error: 'Time slot is no longer available' },
         { status: 409 }
       )
     }

@@ -1,28 +1,29 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatPrice, formatDuration } from '@/lib/utils'
-import { getAvailableDates, type TimeSlot } from '@/lib/availability'
-import type { Provider, Service, Availability } from '@/types/database'
+import { type TimeSlot } from '@/lib/availability'
+import type { BookingLink, Provider, Service } from '@/types/database'
 import { format } from 'date-fns'
-import { Clock, ArrowLeft, Check, Loader2, CalendarDays, User, Globe, AlertCircle } from 'lucide-react'
+import { Clock, ArrowLeft, Check, Loader2, CalendarDays, Users, Globe, AlertCircle } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import Link from 'next/link'
 
-type BlackoutDateRange = {
-  start_date: string
-  end_date: string
+type Member = {
+  providerId: string
+  isRequired: boolean
+  provider: Provider
 }
 
 type Props = {
-  provider: Provider
+  bookingLink: BookingLink
+  members: Member[]
   services: Service[]
-  availability: Availability[]
+  ownerTimezone: string
 }
 
 type BookingStep = 'service' | 'date' | 'time' | 'details' | 'confirmation'
@@ -43,13 +44,15 @@ function formatTimezone(timezone: string): string {
   }
 }
 
-export function BookingFlow({ provider, services, availability }: Props) {
+export function LinkBookingFlow({ bookingLink, members, services, ownerTimezone }: Props) {
   const [step, setStep] = useState<BookingStep>('service')
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [availableDates, setAvailableDates] = useState<Date[]>([])
+  const [loadingDates, setLoadingDates] = useState(true)
 
   const [clientName, setClientName] = useState('')
   const [clientEmail, setClientEmail] = useState('')
@@ -60,32 +63,42 @@ export function BookingFlow({ provider, services, availability }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [isPendingRequest, setIsPendingRequest] = useState(false)
-  const [blackoutDates, setBlackoutDates] = useState<BlackoutDateRange[]>([])
 
-  // Fetch blackout dates on mount
+  const formattedTimezone = formatTimezone(ownerTimezone)
+
+  // Get display name (either booking link name or owner's business name)
+  const displayName = bookingLink.name
+
+  // Required members for display
+  const requiredMembers = members.filter(m => m.isRequired)
+
+  // Fetch available dates when component mounts
   useEffect(() => {
-    const fetchBlackoutDates = async () => {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('blackout_dates')
-        .select('start_date, end_date')
-        .eq('provider_id', provider.id)
+    const fetchDates = async () => {
+      setLoadingDates(true)
+      try {
+        const response = await fetch(
+          `/api/availability/link-slots?booking_link_id=${bookingLink.id}&action=dates`
+        )
 
-      if (data) {
-        setBlackoutDates(data)
+        if (!response.ok) {
+          throw new Error('Failed to fetch available dates')
+        }
+
+        const { dates } = await response.json()
+        setAvailableDates(dates.map((d: string) => new Date(d)))
+      } catch (error) {
+        console.error('Error fetching dates:', error)
+        setAvailableDates([])
+      } finally {
+        setLoadingDates(false)
       }
     }
 
-    fetchBlackoutDates()
-  }, [provider.id])
+    fetchDates()
+  }, [bookingLink.id])
 
-  const availableDates = useMemo(() => {
-    if (!selectedService) return []
-    return getAvailableDates(availability, provider.timezone, 60, blackoutDates)
-  }, [selectedService, availability, provider.timezone, blackoutDates])
-
-  const formattedTimezone = formatTimezone(provider.timezone)
-
+  // Fetch time slots when date/service changes
   useEffect(() => {
     if (!selectedDate || !selectedService) return
 
@@ -94,7 +107,7 @@ export function BookingFlow({ provider, services, availability }: Props) {
 
       try {
         const response = await fetch(
-          `/api/availability/slots?provider_id=${provider.id}&service_id=${selectedService.id}&date=${selectedDate.toISOString()}`
+          `/api/availability/link-slots?booking_link_id=${bookingLink.id}&service_id=${selectedService.id}&date=${selectedDate.toISOString()}`
         )
 
         if (!response.ok) {
@@ -120,7 +133,7 @@ export function BookingFlow({ provider, services, availability }: Props) {
     }
 
     fetchSlots()
-  }, [selectedDate, selectedService, provider.id])
+  }, [selectedDate, selectedService, bookingLink.id])
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service)
@@ -166,11 +179,15 @@ export function BookingFlow({ provider, services, availability }: Props) {
       const startTimeUTC = selectedSlot.start.toISOString()
       const endTimeUTC = selectedSlot.end.toISOString()
 
+      // Use the first required member's provider_id for the booking
+      // In future, this could create bookings for all members
+      const primaryMember = requiredMembers[0]
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider_id: provider.id,
+          provider_id: primaryMember.providerId,
           service_id: selectedService.id,
           client_name: clientName,
           client_email: clientEmail,
@@ -178,6 +195,7 @@ export function BookingFlow({ provider, services, availability }: Props) {
           notes: notes || null,
           start_time: startTimeUTC,
           end_time: endTimeUTC,
+          booking_link_id: bookingLink.id,
         }),
       })
 
@@ -204,21 +222,21 @@ export function BookingFlow({ provider, services, availability }: Props) {
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-sm bg-background/80">
         <div className="max-w-xl mx-auto px-4 py-4">
-          <div className={`flex items-center ${provider.logo_url ? 'justify-center' : ''}`}>
-            {provider.logo_url ? (
-              <img
-                src={provider.logo_url}
-                alt={provider.business_name || 'Logo'}
-                className="h-6 w-auto object-contain"
-              />
-            ) : (
-              <h1 className="text-lg font-semibold">{provider.business_name}</h1>
-            )}
+          <div className="flex items-center justify-center">
+            <h1 className="text-lg font-semibold">{displayName}</h1>
           </div>
         </div>
       </header>
 
       <main className="max-w-xl mx-auto px-4 py-6">
+        {/* Team members indicator */}
+        {step !== 'confirmation' && requiredMembers.length > 1 && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground justify-center">
+            <Users className="size-4" />
+            <span>Scheduling with {requiredMembers.length} team members</span>
+          </div>
+        )}
+
         {/* Consistent header area for all steps */}
         {step !== 'confirmation' && (
           <div className="mb-6">
@@ -294,16 +312,24 @@ export function BookingFlow({ provider, services, availability }: Props) {
           {/* Step: Select Date */}
           {step === 'date' && selectedService && (
             <div className="space-y-4">
-              <Calendar
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                availableDates={availableDates}
-              />
-              {/* Timezone indicator */}
-              <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Globe className="size-3.5" />
-                <span>Times shown in {formattedTimezone}</span>
-              </div>
+              {loadingDates ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  <Calendar
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    availableDates={availableDates}
+                  />
+                  {/* Timezone indicator */}
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                    <Globe className="size-3.5" />
+                    <span>Times shown in {formattedTimezone}</span>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -361,6 +387,12 @@ export function BookingFlow({ provider, services, availability }: Props) {
                     <Globe className="size-3" />
                     {formattedTimezone}
                   </p>
+                  {requiredMembers.length > 1 && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Users className="size-3" />
+                      {requiredMembers.length} team members
+                    </p>
+                  )}
                 </div>
 
                 {/* Booking mode notice */}
@@ -368,7 +400,7 @@ export function BookingFlow({ provider, services, availability }: Props) {
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
                     <AlertCircle className="size-4 text-yellow-600 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-yellow-800">
-                      This booking requires approval. You&apos;ll receive a confirmation email once {provider.business_name} approves your request.
+                      This booking requires approval. You&apos;ll receive a confirmation email once approved.
                     </p>
                   </div>
                 )}
@@ -397,19 +429,17 @@ export function BookingFlow({ provider, services, availability }: Props) {
                       className="h-12"
                     />
                   </div>
-                  {provider.collect_phone && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="phone" className="text-sm">Phone <span className="text-muted-foreground">(optional)</span></Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={clientPhone}
-                        onChange={(e) => setClientPhone(e.target.value)}
-                        placeholder="(555) 123-4567"
-                        className="h-12"
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone" className="text-sm">Phone <span className="text-muted-foreground">(optional)</span></Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      placeholder="(555) 123-4567"
+                      className="h-12"
+                    />
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="notes" className="text-sm">Notes <span className="text-muted-foreground">(optional)</span></Label>
                     <Input
@@ -452,7 +482,7 @@ export function BookingFlow({ provider, services, availability }: Props) {
               </h2>
               <p className="text-sm text-muted-foreground mt-2">
                 {isPendingRequest
-                  ? `We'll email you at ${clientEmail} once ${provider.business_name} confirms.`
+                  ? `We'll email you at ${clientEmail} once confirmed.`
                   : `Confirmation sent to ${clientEmail}`
                 }
               </p>
@@ -475,9 +505,12 @@ export function BookingFlow({ provider, services, availability }: Props) {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <User className="size-5 text-muted-foreground mt-0.5" />
+                  <Users className="size-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="font-medium">{provider.business_name}</p>
+                    <p className="font-medium">{displayName}</p>
+                    {requiredMembers.length > 1 && (
+                      <p className="text-sm text-muted-foreground">{requiredMembers.length} team members</p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -7,6 +7,7 @@ import {
   Clock,
   Settings,
   Briefcase,
+  Link2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -14,6 +15,7 @@ const navItems = [
   { href: '/dashboard', label: 'Bookings', icon: Calendar },
   { href: '/dashboard/services', label: 'Services', icon: Briefcase },
   { href: '/dashboard/availability', label: 'Availability', icon: Clock },
+  { href: '/dashboard/links', label: 'Links', icon: Link2 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ]
 

@@ -20,10 +20,16 @@ export type TimeSlot = {
 
 type AvailabilityRule = Pick<Availability, 'day_of_week' | 'start_time' | 'end_time'>
 
+type BlackoutDateRange = {
+  start_date: string
+  end_date: string
+}
+
 export function getAvailableDates(
   availability: AvailabilityRule[],
   timezone: string,
-  daysAhead: number = 60
+  daysAhead: number = 60,
+  blackoutDates: BlackoutDateRange[] = []
 ): Date[] {
   const dates: Date[] = []
   const now = new Date()
@@ -36,7 +42,17 @@ export function getAvailableDates(
     const date = addDays(today, i)
     const dayOfWeek = getDay(date)
 
-    if (availableDays.has(dayOfWeek)) {
+    if (!availableDays.has(dayOfWeek)) {
+      continue
+    }
+
+    // Check if date falls within any blackout period
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const isBlackedOut = blackoutDates.some(blackout => {
+      return dateStr >= blackout.start_date && dateStr <= blackout.end_date
+    })
+
+    if (!isBlackedOut) {
       dates.push(date)
     }
   }
@@ -50,7 +66,8 @@ export function generateTimeSlots(
   service: Pick<Service, 'duration_minutes' | 'buffer_minutes'>,
   existingBookings: Pick<Booking, 'start_time' | 'end_time'>[],
   timezone: string,
-  minimumNoticeHours: number = 2
+  minimumNoticeHours: number = 2,
+  externalBusyTimes: { start: Date; end: Date }[] = []
 ): TimeSlot[] {
   const slots: TimeSlot[] = []
   const dayOfWeek = getDay(date)
@@ -100,10 +117,25 @@ export function generateTimeSlots(
         )
       })
 
+      // Check if slot conflicts with external busy times (e.g., Google Calendar)
+      const hasExternalConflict = externalBusyTimes.some(busy => {
+        const busyStart = new Date(busy.start)
+        const busyEnd = new Date(busy.end)
+
+        // Check for overlap with external busy time
+        return (
+          (isAfter(slotStartUTC, busyStart) && isBefore(slotStartUTC, busyEnd)) ||
+          (isAfter(slotEndUTC, busyStart) && isBefore(slotEndUTC, busyEnd)) ||
+          (isBefore(slotStartUTC, busyStart) && isAfter(slotEndUTC, busyEnd)) ||
+          format(slotStartUTC, "yyyy-MM-dd'T'HH:mm") === format(busyStart, "yyyy-MM-dd'T'HH:mm") ||
+          format(slotEndUTC, "yyyy-MM-dd'T'HH:mm") === format(busyEnd, "yyyy-MM-dd'T'HH:mm")
+        )
+      })
+
       slots.push({
         start: slotStart,
         end: slotEnd,
-        available: !isPast && !hasConflict,
+        available: !isPast && !hasConflict && !hasExternalConflict,
       })
 
       slotStart = addMinutes(slotStart, service.duration_minutes)
