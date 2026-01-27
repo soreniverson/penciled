@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
     if (uploadError) {
       console.error('Upload error:', uploadError)
-      return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
+      return NextResponse.json({ error: `Failed to upload file: ${uploadError.message}` }, { status: 500 })
     }
 
     // Get public URL
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: publicUrl })
   } catch (error) {
     console.error('Logo upload error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown'}` }, { status: 500 })
   }
 }
 
