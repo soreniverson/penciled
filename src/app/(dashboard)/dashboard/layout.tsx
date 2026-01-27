@@ -15,16 +15,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{
-        backgroundImage: `
-          linear-gradient(to right, rgba(229,225,215,0.12) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(229,225,215,0.12) 1px, transparent 1px)
-        `,
-        backgroundSize: '12px 12px',
-      }}
-    >
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50">
         <div className="flex h-16 items-center justify-center px-4 md:px-6">

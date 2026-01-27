@@ -10,13 +10,13 @@ import { Loader2, Check, Plus, X } from 'lucide-react'
 import type { Availability, InsertAvailability } from '@/types/database'
 
 const DAYS = [
-  { value: 0, label: 'Sunday' },
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
+  { value: 0, label: 'Sun', fullLabel: 'Sunday' },
+  { value: 1, label: 'Mon', fullLabel: 'Monday' },
+  { value: 2, label: 'Tue', fullLabel: 'Tuesday' },
+  { value: 3, label: 'Wed', fullLabel: 'Wednesday' },
+  { value: 4, label: 'Thu', fullLabel: 'Thursday' },
+  { value: 5, label: 'Fri', fullLabel: 'Friday' },
+  { value: 6, label: 'Sat', fullLabel: 'Saturday' },
 ]
 
 type TimeWindow = {
@@ -203,75 +203,77 @@ export default function AvailabilityPage() {
     <div className="space-y-4 max-w-[780px] mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Availability</h1>
-        {saving && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-        {saved && <Check className="size-4 text-green-600" />}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {saving && <Loader2 className="size-4 animate-spin" />}
+          {saved && <><Check className="size-4 text-green-500" /> Saved</>}
+        </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Working hours</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="py-4 divide-y divide-border">
           {DAYS.map((day) => (
-            <div
-              key={day.value}
-              className="px-3 py-3 rounded-lg border"
-            >
-              <div className="flex items-center gap-4">
-                <Switch
-                  checked={availability[day.value].enabled}
-                  onCheckedChange={(checked) => toggleDay(day.value, checked)}
-                />
-                <span className="w-24 text-sm font-medium">{day.label}</span>
-                {!availability[day.value].enabled && (
-                  <span className="ml-auto text-sm text-muted-foreground">Unavailable</span>
-                )}
-              </div>
-
-              {availability[day.value].enabled && (
-                <div className="mt-3 ml-12 space-y-2">
-                  {availability[day.value].windows.map((window, windowIndex) => (
-                    <div key={windowIndex} className="flex items-center gap-2">
-                      <Input
-                        type="time"
-                        className="w-28 h-9"
-                        value={window.startTime}
-                        onChange={(e) =>
-                          updateWindow(day.value, windowIndex, { startTime: e.target.value })
-                        }
-                      />
-                      <span className="text-muted-foreground text-sm">to</span>
-                      <Input
-                        type="time"
-                        className="w-28 h-9"
-                        value={window.endTime}
-                        onChange={(e) =>
-                          updateWindow(day.value, windowIndex, { endTime: e.target.value })
-                        }
-                      />
-                      {availability[day.value].windows.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          onClick={() => removeWindow(day.value, windowIndex)}
-                        >
-                          <X className="size-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-muted-foreground"
-                    onClick={() => addWindow(day.value)}
-                  >
-                    <Plus className="size-4 mr-1" />
-                    Add hours
-                  </Button>
+            <div key={day.value} className="py-3 first:pt-0 last:pb-0">
+              <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3 w-24 pt-1">
+                  <Switch
+                    checked={availability[day.value].enabled}
+                    onCheckedChange={(checked) => toggleDay(day.value, checked)}
+                  />
+                  <span className={`text-sm font-medium ${!availability[day.value].enabled ? 'text-muted-foreground' : ''}`}>
+                    {day.fullLabel}
+                  </span>
                 </div>
-              )}
+
+                <div className="flex-1">
+                  {availability[day.value].enabled ? (
+                    <div className="space-y-2">
+                      {availability[day.value].windows.map((window, windowIndex) => (
+                        <div key={windowIndex} className="flex items-center gap-2">
+                          <Input
+                            type="time"
+                            className="w-32"
+                            value={window.startTime}
+                            onChange={(e) =>
+                              updateWindow(day.value, windowIndex, { startTime: e.target.value })
+                            }
+                          />
+                          <span className="text-muted-foreground">–</span>
+                          <Input
+                            type="time"
+                            className="w-32"
+                            value={window.endTime}
+                            onChange={(e) =>
+                              updateWindow(day.value, windowIndex, { endTime: e.target.value })
+                            }
+                          />
+                          {availability[day.value].windows.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => removeWindow(day.value, windowIndex)}
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          )}
+                          {windowIndex === availability[day.value].windows.length - 1 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground"
+                              onClick={() => addWindow(day.value)}
+                            >
+                              <Plus className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground pt-1">Unavailable</p>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </CardContent>

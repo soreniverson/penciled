@@ -17,7 +17,6 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { generateSlug } from '@/lib/utils'
-import { themeOptions, type AccentColor } from '@/lib/themes'
 import { Loader2, Check, ExternalLink, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import type { Provider } from '@/types/database'
@@ -50,7 +49,6 @@ export default function SettingsPage() {
   const [slug, setSlug] = useState('')
   const [timezone, setTimezone] = useState('')
   const [collectPhone, setCollectPhone] = useState(false)
-  const [accentColor, setAccentColor] = useState<AccentColor>('neutral')
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
 
@@ -75,7 +73,6 @@ export default function SettingsPage() {
         setSlug(data.slug || '')
         setTimezone(data.timezone || '')
         setCollectPhone(data.collect_phone ?? false)
-        setAccentColor(data.accent_color || 'neutral')
         setSlugAvailable(true)
       }
 
@@ -127,7 +124,6 @@ export default function SettingsPage() {
           slug: slug || null,
           timezone,
           collect_phone: collectPhone,
-          accent_color: accentColor,
         })
         .eq('id', provider.id)
 
@@ -289,31 +285,6 @@ export default function SettingsPage() {
               checked={collectPhone}
               onCheckedChange={setCollectPhone}
             />
-          </div>
-          <Separator />
-          <div className="space-y-3">
-            <div className="space-y-0.5">
-              <Label>Accent color</Label>
-              <p className="text-xs text-muted-foreground">
-                Choose a theme color for your booking page
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {themeOptions.map((theme) => (
-                <button
-                  key={theme.value}
-                  type="button"
-                  onClick={() => setAccentColor(theme.value)}
-                  className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                    accentColor === theme.value
-                      ? 'border-foreground scale-110'
-                      : 'border-transparent hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: theme.color }}
-                  title={theme.label}
-                />
-              ))}
-            </div>
           </div>
         </CardContent>
       </Card>

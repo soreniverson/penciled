@@ -120,16 +120,7 @@ export function RescheduleFlow({ booking, provider, service, availability, token
   }
 
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{
-        backgroundImage: `
-          linear-gradient(to right, rgba(229,225,215,0.12) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(229,225,215,0.12) 1px, transparent 1px)
-        `,
-        backgroundSize: '12px 12px',
-      }}
-    >
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-sm bg-background/80">
         <div className="max-w-xl mx-auto px-4 py-4">

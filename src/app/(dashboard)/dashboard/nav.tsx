@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Calendar,
-  LayoutDashboard,
   Clock,
   Settings,
   Briefcase,
@@ -12,8 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 
 const navItems = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/bookings', label: 'Bookings', icon: Calendar },
+  { href: '/dashboard', label: 'Bookings', icon: Calendar },
   { href: '/dashboard/services', label: 'Services', icon: Briefcase },
   { href: '/dashboard/availability', label: 'Availability', icon: Clock },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },

@@ -1,17 +1,12 @@
 'use client'
 
-import { getThemeStyles, type AccentColor } from '@/lib/themes'
-
 type Props = {
-  accentColor: AccentColor
   children: React.ReactNode
 }
 
-export function ThemeWrapper({ accentColor, children }: Props) {
-  const themeStyles = getThemeStyles(accentColor)
-
+export function ThemeWrapper({ children }: Props) {
   return (
-    <div style={themeStyles} className="min-h-screen">
+    <div className="min-h-screen">
       {children}
     </div>
   )

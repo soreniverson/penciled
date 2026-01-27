@@ -3,13 +3,22 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, ExternalLink, Clock, Users } from 'lucide-react'
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns'
+import { Calendar, ExternalLink, Clock, Mail, User } from 'lucide-react'
+import { format, isToday, isTomorrow, isThisWeek } from 'date-fns'
 import type { Provider, Booking, Service } from '@/types/database'
 import { CopyButton } from '@/components/copy-button'
+import { CancelBookingButton } from './bookings/cancel-button'
+import { CompleteBookingButton } from './bookings/complete-button'
+import { ApproveBookingButton, DeclineBookingButton } from './bookings/approve-button'
 
 type BookingWithService = Booking & {
-  services: Pick<Service, 'name'> | null
+  services: Pick<Service, 'name' | 'duration_minutes'> | null
+}
+
+function formatBookingDate(date: Date): string {
+  if (isToday(date)) return 'Today'
+  if (isTomorrow(date)) return 'Tomorrow'
+  return format(date, 'EEE, MMM d')
 }
 
 export default async function DashboardPage() {
@@ -27,102 +36,48 @@ export default async function DashboardPage() {
     .single()
     .then(res => ({ ...res, data: res.data as Provider | null }))
 
-  // Get today's bookings
-  const today = new Date()
-  const { data: todayBookings } = await supabase
+  // Get all upcoming bookings
+  const { data: upcomingBookings } = await supabase
     .from('bookings')
-    .select('*, services(name)')
+    .select('*, services(name, duration_minutes)')
     .eq('provider_id', user.id)
-    .eq('status', 'confirmed')
-    .gte('start_time', startOfDay(today).toISOString())
-    .lte('start_time', endOfDay(today).toISOString())
+    .in('status', ['confirmed', 'pending'])
+    .gte('start_time', new Date().toISOString())
     .order('start_time', { ascending: true })
     .returns<BookingWithService[]>()
 
-  // Get this week's booking count
-  const { count: weekBookings } = await supabase
-    .from('bookings')
-    .select('*', { count: 'exact', head: true })
-    .eq('provider_id', user.id)
-    .eq('status', 'confirmed')
-    .gte('start_time', startOfWeek(today).toISOString())
-    .lte('start_time', endOfWeek(today).toISOString())
+  // Get past bookings (last 30 days)
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  // Get total bookings
-  const { count: totalBookings } = await supabase
+  const { data: pastBookings } = await supabase
     .from('bookings')
-    .select('*', { count: 'exact', head: true })
+    .select('*, services(name, duration_minutes)')
     .eq('provider_id', user.id)
-    .eq('status', 'confirmed')
+    .lt('start_time', new Date().toISOString())
+    .gte('start_time', thirtyDaysAgo.toISOString())
+    .order('start_time', { ascending: false })
+    .limit(10)
+    .returns<BookingWithService[]>()
 
   const bookingPageUrl = provider?.slug
     ? `${process.env.NEXT_PUBLIC_APP_URL}/book/${provider.slug}`
     : null
 
   return (
-    <div className="space-y-4 max-w-[780px] mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Welcome back{provider?.name ? `, ${provider.name.split(' ')[0]}` : ''}
-        </h1>
-      </div>
-
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Today</CardTitle>
-            <Calendar className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{todayBookings?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {todayBookings?.length === 1 ? 'booking' : 'bookings'} today
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">This Week</CardTitle>
-            <Clock className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{weekBookings || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {weekBookings === 1 ? 'booking' : 'bookings'} this week
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">All Time</CardTitle>
-            <Users className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalBookings || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              total {totalBookings === 1 ? 'booking' : 'bookings'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="space-y-6 max-w-[780px] mx-auto">
       {/* Booking Link */}
       {bookingPageUrl && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Your Booking Link</CardTitle>
-            <CardDescription>Share this link with your clients</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm break-all">
-              {bookingPageUrl}
-            </code>
-            <div className="flex gap-2">
+          <CardContent className="py-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-muted-foreground mb-1">Your booking link</p>
+              <code className="text-sm break-all">{bookingPageUrl}</code>
+            </div>
+            <div className="flex gap-2 shrink-0">
               <CopyButton text={bookingPageUrl} />
               <Link href={`/book/${provider?.slug}`} target="_blank">
-                <Button size="sm" className="gap-1">
+                <Button variant="outline" size="sm" className="gap-1">
                   Open <ExternalLink className="size-3" />
                 </Button>
               </Link>
@@ -131,50 +86,99 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      {/* Today's Bookings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
-          <CardDescription>
-            {format(today, 'EEEE, MMMM d, yyyy')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {todayBookings && todayBookings.length > 0 ? (
-            <div className="space-y-4">
-              {todayBookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between p-4 rounded-lg border"
-                >
-                  <div>
-                    <p className="font-medium">{booking.client_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {booking.services?.name}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      {format(new Date(booking.start_time), 'h:mm a')}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(booking.end_time), 'h:mm a')}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="size-12 mx-auto mb-4 opacity-50" />
-              <p>No bookings scheduled for today</p>
-              <Link href="/dashboard/bookings" className="text-sm underline hover:text-foreground">
-                View all bookings
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Upcoming Bookings */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-medium">Upcoming</h2>
+        {upcomingBookings && upcomingBookings.length > 0 ? (
+          <div className="space-y-2">
+            {upcomingBookings.map((booking) => {
+              const startDate = new Date(booking.start_time)
+              return (
+                <Card key={booking.id}>
+                  <CardContent className="py-3 px-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="text-center shrink-0 w-14">
+                          <p className="text-xs text-muted-foreground">{formatBookingDate(startDate)}</p>
+                          <p className="text-lg font-semibold">{format(startDate, 'h:mm')}</p>
+                          <p className="text-xs text-muted-foreground">{format(startDate, 'a')}</p>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`size-2 rounded-full shrink-0 ${
+                              booking.status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
+                            }`} />
+                            <p className="font-medium truncate">{booking.client_name}</p>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">{booking.services?.name}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        {booking.status === 'pending' ? (
+                          <>
+                            <ApproveBookingButton bookingId={booking.id} clientName={booking.client_name} />
+                            <DeclineBookingButton bookingId={booking.id} clientName={booking.client_name} />
+                          </>
+                        ) : (
+                          <CancelBookingButton bookingId={booking.id} clientName={booking.client_name} />
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <Calendar className="size-10 mx-auto mb-3 opacity-50" />
+              <p>No upcoming bookings</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Past Bookings */}
+      {pastBookings && pastBookings.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-medium text-muted-foreground">Past</h2>
+          <div className="space-y-2">
+            {pastBookings.map((booking) => {
+              const startDate = new Date(booking.start_time)
+              return (
+                <Card key={booking.id} className="opacity-60">
+                  <CardContent className="py-3 px-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="text-center shrink-0 w-14">
+                          <p className="text-xs text-muted-foreground">{format(startDate, 'MMM d')}</p>
+                          <p className="text-lg font-semibold">{format(startDate, 'h:mm')}</p>
+                          <p className="text-xs text-muted-foreground">{format(startDate, 'a')}</p>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`size-2 rounded-full shrink-0 ${
+                              booking.status === 'completed' ? 'bg-blue-500' :
+                              booking.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-500'
+                            }`} />
+                            <p className="font-medium truncate">{booking.client_name}</p>
+                            <span className="text-xs text-muted-foreground capitalize">({booking.status})</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">{booking.services?.name}</p>
+                        </div>
+                      </div>
+                      {booking.status === 'confirmed' && (
+                        <CompleteBookingButton bookingId={booking.id} />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

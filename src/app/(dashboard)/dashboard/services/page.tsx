@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatPrice, formatDuration } from '@/lib/utils'
-import { Plus, Clock } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { ServiceForm } from './service-form'
 import { ServiceActions } from './service-actions'
 import type { Service } from '@/types/database'
@@ -43,27 +43,23 @@ export default async function ServicesPage() {
             <Card key={service.id} className={!service.is_active ? 'opacity-60' : ''}>
               <CardContent className="py-0.5 px-6">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
+                  <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{service.name}</h3>
                       {!service.is_active && (
                         <span className="text-xs bg-muted px-2 py-0.5 rounded">Inactive</span>
                       )}
                     </div>
-                    {service.description && (
-                      <p className="text-sm text-muted-foreground">{service.description}</p>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-sm text-muted-foreground">{formatDuration(service.duration_minutes)}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-sm text-muted-foreground">{formatPrice(service.price_cents, service.currency)}</span>
+                    {service.booking_mode === 'request' && (
+                      <>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="text-sm text-yellow-600">Requires approval</span>
+                      </>
                     )}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="size-4" />
-                        {formatDuration(service.duration_minutes)}
-                      </span>
-                      <span>{formatPrice(service.price_cents, service.currency)}</span>
-                      <span>{service.buffer_minutes} min buffer</span>
-                      <span className={service.booking_mode === 'request' ? 'text-yellow-600' : ''}>
-                        {service.booking_mode === 'request' ? 'Requires approval' : 'Instant booking'}
-                      </span>
-                    </div>
                   </div>
                   <ServiceActions service={service} />
                 </div>
