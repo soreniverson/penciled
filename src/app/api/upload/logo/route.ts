@@ -31,10 +31,14 @@ export async function POST(request: Request) {
     const ext = file.name.split('.').pop()
     const filename = `${user.id}/logo.${ext}`
 
+    // Convert file to ArrayBuffer for Supabase
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('logos')
-      .upload(filename, file, {
+      .upload(filename, buffer, {
         upsert: true,
         contentType: file.type,
       })
