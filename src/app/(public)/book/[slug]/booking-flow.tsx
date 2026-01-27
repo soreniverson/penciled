@@ -319,7 +319,7 @@ export function BookingFlow({ provider, services, availability }: Props) {
                       <button
                         key={i}
                         onClick={() => handleSlotSelect(slot)}
-                        className="py-4 px-2 text-sm font-medium rounded-lg border bg-card hover:border-primary/40 active:bg-sand-100 transition-colors text-center touch-manipulation"
+                        className="py-4 px-2 text-sm font-medium rounded-lg border bg-card hover:border-primary/40 active:bg-secondary transition-colors text-center touch-manipulation"
                       >
                         {format(slot.start, 'h:mm a')}
                       </button>
@@ -340,7 +340,7 @@ export function BookingFlow({ provider, services, availability }: Props) {
             <Card>
               <CardContent className="pt-4 space-y-5">
                 {/* Booking Summary */}
-                <div className="p-4 rounded-lg bg-sand-100 space-y-2">
+                <div className="p-4 rounded-lg bg-secondary space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>{selectedService.name}</span>
                     <span className="font-medium">{formatPrice(selectedService.price_cents, selectedService.currency)}</span>

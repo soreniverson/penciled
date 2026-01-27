@@ -177,7 +177,7 @@ export function RescheduleFlow({ booking, provider, service, availability, token
 
         {/* Current booking info */}
         {step === 'date' && (
-          <div className="mb-4 p-3 rounded-lg bg-sand-100 text-sm">
+          <div className="mb-4 p-3 rounded-lg bg-secondary text-sm">
             <p className="text-muted-foreground">Current appointment:</p>
             <p className="font-medium">
               {format(new Date(booking.start_time), 'EEE, MMM d')} at {format(new Date(booking.start_time), 'h:mm a')}
@@ -220,8 +220,8 @@ export function RescheduleFlow({ booking, provider, service, availability, token
                         onClick={() => handleSlotSelect(slot)}
                         className={`w-full py-3 px-4 text-sm font-medium rounded-lg border transition-colors text-center ${
                           selectedSlot?.start.getTime() === slot.start.getTime()
-                            ? 'border-sand-900 bg-sand-100'
-                            : 'bg-card hover:border-sand-400'
+                            ? 'border-foreground bg-secondary'
+                            : 'bg-card hover:border-muted-foreground'
                         }`}
                       >
                         {format(slot.start, 'h:mm a')}

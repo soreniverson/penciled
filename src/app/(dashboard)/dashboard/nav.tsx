@@ -38,8 +38,8 @@ export function DashboardNav() {
             size="sm"
             className={`gap-2 ${
               isActive(item.href)
-                ? 'text-sand-900'
-                : 'text-sand-400 hover:text-sand-600'
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <item.icon className="size-4" />

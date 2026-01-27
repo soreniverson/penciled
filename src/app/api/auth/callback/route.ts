@@ -26,6 +26,10 @@ export async function GET(request: Request) {
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
+    if (error) {
+      console.error('Code exchange error:', error.message, error)
+    }
+
     if (!error && data.user) {
       return await handleSuccessfulAuth(request, supabase, data.user, next, origin)
     }

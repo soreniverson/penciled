@@ -50,7 +50,7 @@ export default function SettingsPage() {
   const [slug, setSlug] = useState('')
   const [timezone, setTimezone] = useState('')
   const [collectPhone, setCollectPhone] = useState(false)
-  const [accentColor, setAccentColor] = useState<AccentColor>('sand')
+  const [accentColor, setAccentColor] = useState<AccentColor>('neutral')
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
 
@@ -75,7 +75,7 @@ export default function SettingsPage() {
         setSlug(data.slug || '')
         setTimezone(data.timezone || '')
         setCollectPhone(data.collect_phone ?? false)
-        setAccentColor(data.accent_color || 'sand')
+        setAccentColor(data.accent_color || 'neutral')
         setSlugAvailable(true)
       }
 

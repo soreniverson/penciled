@@ -66,7 +66,7 @@ export default async function BookingPage({ params }: Props) {
 
   if (!services || services.length === 0) {
     return (
-      <ThemeWrapper accentColor={provider.accent_color || 'sand'}>
+      <ThemeWrapper accentColor={provider.accent_color || 'neutral'}>
         <div className="min-h-screen flex items-center justify-center bg-background px-4">
           <div className="text-center">
             <h1 className="text-2xl font-semibold mb-2">No services available</h1>
@@ -80,7 +80,7 @@ export default async function BookingPage({ params }: Props) {
   }
 
   return (
-    <ThemeWrapper accentColor={provider.accent_color || 'sand'}>
+    <ThemeWrapper accentColor={provider.accent_color || 'neutral'}>
       <BookingFlow
         provider={provider}
         services={services}

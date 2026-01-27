@@ -21,7 +21,7 @@ export type Database = {
           slug: string | null
           plan: 'free' | 'paid'
           collect_phone: boolean
-          accent_color: 'sand' | 'blue' | 'green' | 'orange' | 'red' | 'purple' | null
+          accent_color: 'neutral' | 'blue' | 'green' | 'orange' | 'red' | 'purple' | null
           google_calendar_token: Json | null
           google_calendar_id: string | null
           created_at: string
@@ -38,7 +38,7 @@ export type Database = {
           slug?: string | null
           plan?: 'free' | 'paid'
           collect_phone?: boolean
-          accent_color?: 'sand' | 'blue' | 'green' | 'orange' | 'red' | 'purple'
+          accent_color?: 'neutral' | 'blue' | 'green' | 'orange' | 'red' | 'purple'
           google_calendar_token?: Json | null
           google_calendar_id?: string | null
           created_at?: string
@@ -55,7 +55,7 @@ export type Database = {
           slug?: string | null
           plan?: 'free' | 'paid'
           collect_phone?: boolean
-          accent_color?: 'sand' | 'blue' | 'green' | 'orange' | 'red' | 'purple'
+          accent_color?: 'neutral' | 'blue' | 'green' | 'orange' | 'red' | 'purple'
           google_calendar_token?: Json | null
           google_calendar_id?: string | null
           created_at?: string

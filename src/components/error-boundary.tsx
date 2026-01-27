@@ -45,10 +45,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
           <AlertTriangle className="size-12 text-amber-500 mb-4" />
-          <h2 className="text-xl font-semibold text-sand-900 mb-2">
+          <h2 className="text-xl font-semibold text-foreground mb-2">
             Something went wrong
           </h2>
-          <p className="text-sand-600 mb-6 max-w-md">
+          <p className="text-muted-foreground mb-6 max-w-md">
             We encountered an unexpected error. Please try again or contact support if the problem persists.
           </p>
           <div className="flex gap-3">
@@ -60,7 +60,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </Button>
           </div>
           {process.env.NODE_ENV === 'development' && this.state.error && (
-            <pre className="mt-6 p-4 bg-sand-100 rounded-lg text-left text-xs text-red-600 overflow-auto max-w-full">
+            <pre className="mt-6 p-4 bg-secondary rounded-lg text-left text-xs text-red-400 overflow-auto max-w-full">
               {this.state.error.message}
               {'\n\n'}
               {this.state.error.stack}

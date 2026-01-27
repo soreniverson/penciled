@@ -45,11 +45,11 @@ function HowItWorksSection({ steps }: { steps: { number: string; title: string; 
   }, [steps.length])
 
   return (
-    <section ref={sectionRef} id="how-it-works" className="bg-sand-100 border-y border-sand-200">
+    <section ref={sectionRef} id="how-it-works" className="bg-neutral-800 border-y border-neutral-700">
       <div className="max-w-[1080px] mx-auto px-10 md:px-16">
         <div className="text-center pt-16 pb-10">
-          <h2 className="text-3xl font-bold mb-2 text-sand-900 tracking-tight">Up and running in minutes</h2>
-          <p className="text-sand-600">No tutorials needed. No learning curve.</p>
+          <h2 className="text-3xl font-bold mb-2 text-foreground tracking-tight">Up and running in minutes</h2>
+          <p className="text-muted-foreground">No tutorials needed. No learning curve.</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-12 pb-16">
@@ -69,12 +69,12 @@ function HowItWorksSection({ steps }: { steps: { number: string; title: string; 
                     transform: isFuture ? 'translateY(10px)' : 'translateY(0)',
                   }}
                 >
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white border border-sand-200 flex items-center justify-center">
-                    <span className="text-sm font-mono font-medium text-sand-600">{step.number}</span>
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-neutral-700 border border-neutral-600 flex items-center justify-center">
+                    <span className="text-sm font-mono font-medium text-neutral-300">{step.number}</span>
                   </div>
                   <div className="pt-1.5">
-                    <h3 className="font-semibold text-lg text-sand-900 mb-1">{step.title}</h3>
-                    <p className="text-sand-600">{step.description}</p>
+                    <h3 className="font-semibold text-lg text-foreground mb-1">{step.title}</h3>
+                    <p className="text-muted-foreground">{step.description}</p>
                   </div>
                 </div>
               )
@@ -84,7 +84,7 @@ function HowItWorksSection({ steps }: { steps: { number: string; title: string; 
           {/* Right side - Visual representation */}
           <div className="flex-1 relative hidden md:block">
             <div className="sticky top-32">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-sand-200 shadow-sm bg-white flex items-center justify-center">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-neutral-700 shadow-sm bg-neutral-800 flex items-center justify-center">
                 <div className="text-center p-8">
                   <div
                     className="transition-all duration-500"
@@ -93,8 +93,8 @@ function HowItWorksSection({ steps }: { steps: { number: string; title: string; 
                       position: activeStep === 0 ? 'relative' : 'absolute',
                     }}
                   >
-                    <Calendar className="size-16 text-sand-300 mx-auto mb-4" strokeWidth={1} />
-                    <p className="text-sand-500 text-sm">Set your weekly schedule</p>
+                    <Calendar className="size-16 text-neutral-500 mx-auto mb-4" strokeWidth={1} />
+                    <p className="text-muted-foreground text-sm">Set your weekly schedule</p>
                   </div>
                   <div
                     className="transition-all duration-500"
@@ -103,10 +103,10 @@ function HowItWorksSection({ steps }: { steps: { number: string; title: string; 
                       position: activeStep === 1 ? 'relative' : 'absolute',
                     }}
                   >
-                    <div className="bg-sand-100 rounded-lg p-4 border border-sand-200 max-w-xs mx-auto">
-                      <p className="text-sand-700 font-medium text-sm">penciled.fyi/your-name</p>
+                    <div className="bg-neutral-700 rounded-lg p-4 border border-neutral-600 max-w-xs mx-auto">
+                      <p className="text-neutral-200 font-medium text-sm">penciled.fyi/your-name</p>
                     </div>
-                    <p className="text-sand-500 text-sm mt-4">Share your personalized link</p>
+                    <p className="text-muted-foreground text-sm mt-4">Share your personalized link</p>
                   </div>
                   <div
                     className="transition-all duration-500"
@@ -115,8 +115,8 @@ function HowItWorksSection({ steps }: { steps: { number: string; title: string; 
                       position: activeStep === 2 ? 'relative' : 'absolute',
                     }}
                   >
-                    <Bell className="size-16 text-sand-300 mx-auto mb-4" strokeWidth={1} />
-                    <p className="text-sand-500 text-sm">Both get notified instantly</p>
+                    <Bell className="size-16 text-neutral-500 mx-auto mb-4" strokeWidth={1} />
+                    <p className="text-muted-foreground text-sm">Both get notified instantly</p>
                   </div>
                 </div>
               </div>
@@ -170,15 +170,15 @@ function CurvedMarquee({ testimonials }: { testimonials: { quote: string; author
         return (
           <div
             key={`${testimonial.author}-${index}`}
-            className="flex-shrink-0 w-[320px] mx-2 p-5 rounded-xl border border-sand-200 bg-white flex flex-col justify-between h-[180px] shadow-sm"
+            className="flex-shrink-0 w-[320px] mx-2 p-5 rounded-xl border border-neutral-700 bg-neutral-800 flex flex-col justify-between h-[180px] shadow-sm"
             style={{
               transform: `rotate(${rotation}deg) translateY(${yOffset}px)`,
             }}
           >
-            <p className="text-sand-700 text-sm">&ldquo;{testimonial.quote}&rdquo;</p>
+            <p className="text-neutral-200 text-sm">&ldquo;{testimonial.quote}&rdquo;</p>
             <div>
-              <p className="text-sm font-medium text-sand-700">{testimonial.author}</p>
-              <p className="text-xs text-sand-500">{testimonial.role}</p>
+              <p className="text-sm font-medium text-neutral-200">{testimonial.author}</p>
+              <p className="text-xs text-muted-foreground">{testimonial.role}</p>
             </div>
           </div>
         )
@@ -274,23 +274,23 @@ export default function HomePage() {
       {/* Fixed vertical gridlines */}
       <div className="fixed inset-0 pointer-events-none z-40">
         <div className="max-w-[1080px] mx-auto h-full relative px-6">
-          <div className="absolute left-6 top-0 bottom-0 w-px bg-sand-200" />
-          <div className="absolute right-6 top-0 bottom-0 w-px bg-sand-200" />
+          <div className="absolute left-6 top-0 bottom-0 w-px bg-neutral-800" />
+          <div className="absolute right-6 top-0 bottom-0 w-px bg-neutral-800" />
         </div>
       </div>
 
       {/* Navigation */}
-      <header className="sticky top-0 z-50 w-full border-b border-sand-200 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-neutral-800 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-[1080px] mx-auto px-6 flex h-16 items-center justify-between">
-          <Link href="/" className="ml-4 text-xl font-semibold tracking-tight text-sand-900">
+          <Link href="/" className="ml-4 text-xl font-semibold tracking-tight text-foreground">
             penciled.fyi
           </Link>
           <nav className="flex items-center gap-4 mr-4">
-            <Link href="/login" className="text-sm font-medium text-sand-600 hover:text-sand-900 transition-colors">
+            <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Login
             </Link>
             <Link href="/login">
-              <Button className="bg-sand-900 hover:bg-sand-800 text-sand-50">Get Started</Button>
+              <Button className="bg-neutral-50 hover:bg-neutral-200 text-neutral-900">Get Started</Button>
             </Link>
           </nav>
         </div>
@@ -301,27 +301,27 @@ export default function HomePage() {
         <section className="py-24 md:py-32">
           <div className="max-w-[1080px] mx-auto px-10">
             <div className="flex flex-col items-center text-center space-y-8">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl text-balance text-sand-900">
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl text-balance text-foreground">
                 Booking made simple for independent providers
               </h1>
-              <p className="text-xl text-sand-600 max-w-2xl text-balance">
+              <p className="text-xl text-muted-foreground max-w-2xl text-balance">
                 Set your availability, share your link, get booked.
                 Simpler than Acuity, warmer than Calendly, cheaper than both.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/login">
-                  <Button size="lg" className="gap-2 bg-sand-900 hover:bg-sand-800 text-sand-50">
+                  <Button size="lg" className="gap-2 bg-neutral-50 hover:bg-neutral-200 text-neutral-900">
                     Start for free
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="#how-it-works">
-                  <Button size="lg" variant="outline" className="border-sand-300 text-sand-700 hover:bg-sand-100 hover:text-sand-900">
+                  <Button size="lg" variant="outline" className="border-neutral-600 text-neutral-200 hover:bg-neutral-800 hover:text-foreground">
                     See how it works
                   </Button>
                 </Link>
               </div>
-              <p className="text-sm text-sand-500">
+              <p className="text-sm text-muted-foreground">
                 No credit card required. Free plan available.
               </p>
             </div>
@@ -329,22 +329,22 @@ export default function HomePage() {
         </section>
 
         {/* Features Grid */}
-        <section className="py-20 border-t border-sand-200">
+        <section className="py-20 border-t border-neutral-800">
           <div className="max-w-[1080px] mx-auto px-10 md:px-16">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4 text-sand-900 tracking-tight">Everything you need, nothing you don&apos;t</h2>
-              <p className="text-sand-600 max-w-2xl mx-auto">
+              <h2 className="text-3xl font-bold mb-4 text-foreground tracking-tight">Everything you need, nothing you don&apos;t</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
                 Built for people who want to focus on their work, not their calendar.
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {features.map((feature) => (
-                <div key={feature.title} className="p-5 rounded-xl border border-sand-200 bg-white shadow-sm hover:shadow-md hover:border-sand-300 transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-sand-100 border border-sand-200 flex items-center justify-center mb-4">
-                    <feature.icon className="h-4 w-4 text-sand-700" />
+                <div key={feature.title} className="p-5 rounded-xl border border-neutral-700 bg-neutral-800 hover:border-neutral-600 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-neutral-700 border border-neutral-600 flex items-center justify-center mb-4">
+                    <feature.icon className="h-4 w-4 text-neutral-300" />
                   </div>
-                  <h3 className="text-base font-semibold mb-2 text-sand-900">{feature.title}</h3>
-                  <p className="text-sm text-sand-500 leading-relaxed">{feature.description}</p>
+                  <h3 className="text-base font-semibold mb-2 text-foreground">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                 </div>
               ))}
             </div>
@@ -358,7 +358,7 @@ export default function HomePage() {
         <section className="py-20">
           <div className="max-w-[1080px] mx-auto px-10">
             <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold text-sand-900 tracking-tight">
+              <h2 className="text-3xl font-bold text-foreground tracking-tight">
                 Loved by{' '}
                 <span className="inline-block min-w-[140px] text-left">
                   <span key={roleIndex} className="animate-fade-in">{roles[roleIndex]}</span>
@@ -375,91 +375,91 @@ export default function HomePage() {
         </section>
 
         {/* Pricing Section */}
-        <section className="py-20 border-t border-sand-200">
+        <section className="py-20 border-t border-neutral-800">
           <div className="max-w-[1080px] mx-auto px-10 md:px-16">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4 text-sand-900 tracking-tight">Simple, transparent pricing</h2>
-              <p className="text-sand-600 max-w-2xl mx-auto">
+              <h2 className="text-3xl font-bold mb-4 text-foreground tracking-tight">Simple, transparent pricing</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
                 No hidden fees. No credit card required to start.
               </p>
             </div>
             <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {/* Free Plan */}
-              <div className="p-6 rounded-xl border border-sand-200 bg-white">
+              <div className="p-6 rounded-xl border border-neutral-700 bg-neutral-800">
                 <div className="mb-4">
-                  <h3 className="text-xl font-semibold text-sand-900">Free</h3>
-                  <p className="text-sand-500 text-sm">Perfect for getting started</p>
+                  <h3 className="text-xl font-semibold text-foreground">Free</h3>
+                  <p className="text-muted-foreground text-sm">Perfect for getting started</p>
                 </div>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-sand-900">$0</span>
-                  <span className="text-sand-500">/month</span>
+                  <span className="text-4xl font-bold text-foreground">$0</span>
+                  <span className="text-muted-foreground">/month</span>
                 </div>
                 <ul className="space-y-3 mb-6 text-sm">
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Up to 20 bookings/month
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     1 service type
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Email notifications
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Basic availability settings
                   </li>
                 </ul>
                 <Link href="/login">
-                  <Button variant="outline" className="w-full border-sand-300">
+                  <Button variant="outline" className="w-full border-neutral-600 text-neutral-200 hover:bg-neutral-700">
                     Get Started
                   </Button>
                 </Link>
               </div>
 
               {/* Pro Plan */}
-              <div className="p-6 rounded-xl border-2 border-sand-900 bg-white relative">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sand-900 text-sand-50 text-xs font-medium px-3 py-1 rounded-full">
+              <div className="p-6 rounded-xl border-2 border-neutral-50 bg-neutral-800 relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-neutral-50 text-neutral-900 text-xs font-medium px-3 py-1 rounded-full">
                   Most Popular
                 </div>
                 <div className="mb-4">
-                  <h3 className="text-xl font-semibold text-sand-900">Pro</h3>
-                  <p className="text-sand-500 text-sm">For growing businesses</p>
+                  <h3 className="text-xl font-semibold text-foreground">Pro</h3>
+                  <p className="text-muted-foreground text-sm">For growing businesses</p>
                 </div>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-sand-900">$12</span>
-                  <span className="text-sand-500">/month</span>
+                  <span className="text-4xl font-bold text-foreground">$12</span>
+                  <span className="text-muted-foreground">/month</span>
                 </div>
                 <ul className="space-y-3 mb-6 text-sm">
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Unlimited bookings
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Unlimited services
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Google Calendar sync
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Reminder emails
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Custom accent colors
                   </li>
-                  <li className="flex items-center gap-2 text-sand-700">
-                    <Check className="size-4 text-green-600" />
+                  <li className="flex items-center gap-2 text-neutral-200">
+                    <Check className="size-4 text-green-500" />
                     Priority support
                   </li>
                 </ul>
                 <Link href="/login">
-                  <Button className="w-full bg-sand-900 hover:bg-sand-800 text-sand-50">
+                  <Button className="w-full bg-neutral-50 hover:bg-neutral-200 text-neutral-900">
                     Start Free Trial
                   </Button>
                 </Link>
@@ -469,45 +469,45 @@ export default function HomePage() {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-20 border-t border-sand-200 bg-sand-50">
+        <section className="py-20 border-t border-neutral-800 bg-neutral-900">
           <div className="max-w-[1080px] mx-auto px-10 md:px-16">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4 text-sand-900 tracking-tight">Frequently asked questions</h2>
+              <h2 className="text-3xl font-bold mb-4 text-foreground tracking-tight">Frequently asked questions</h2>
             </div>
             <div className="max-w-2xl mx-auto space-y-6">
-              <div className="p-5 rounded-xl bg-white border border-sand-200">
-                <h3 className="font-semibold text-sand-900 mb-2">How does the free plan work?</h3>
-                <p className="text-sand-600 text-sm">
+              <div className="p-5 rounded-xl bg-neutral-800 border border-neutral-700">
+                <h3 className="font-semibold text-foreground mb-2">How does the free plan work?</h3>
+                <p className="text-muted-foreground text-sm">
                   The free plan includes up to 20 bookings per month with one service type. No credit card required. You can upgrade anytime as your business grows.
                 </p>
               </div>
-              <div className="p-5 rounded-xl bg-white border border-sand-200">
-                <h3 className="font-semibold text-sand-900 mb-2">Can clients book without creating an account?</h3>
-                <p className="text-sand-600 text-sm">
+              <div className="p-5 rounded-xl bg-neutral-800 border border-neutral-700">
+                <h3 className="font-semibold text-foreground mb-2">Can clients book without creating an account?</h3>
+                <p className="text-muted-foreground text-sm">
                   Yes! Clients can book directly from your booking page with just their name and email. They receive a link to manage their booking without needing to log in.
                 </p>
               </div>
-              <div className="p-5 rounded-xl bg-white border border-sand-200">
-                <h3 className="font-semibold text-sand-900 mb-2">How does Google Calendar sync work?</h3>
-                <p className="text-sand-600 text-sm">
+              <div className="p-5 rounded-xl bg-neutral-800 border border-neutral-700">
+                <h3 className="font-semibold text-foreground mb-2">How does Google Calendar sync work?</h3>
+                <p className="text-muted-foreground text-sm">
                   Once connected, bookings automatically appear in your Google Calendar. If a time is blocked in your calendar, it won&apos;t show as available to clients.
                 </p>
               </div>
-              <div className="p-5 rounded-xl bg-white border border-sand-200">
-                <h3 className="font-semibold text-sand-900 mb-2">What&apos;s the difference between instant and request booking?</h3>
-                <p className="text-sand-600 text-sm">
+              <div className="p-5 rounded-xl bg-neutral-800 border border-neutral-700">
+                <h3 className="font-semibold text-foreground mb-2">What&apos;s the difference between instant and request booking?</h3>
+                <p className="text-muted-foreground text-sm">
                   Instant booking confirms appointments automatically. Request booking requires your approval first, giving you more control over who books with you.
                 </p>
               </div>
-              <div className="p-5 rounded-xl bg-white border border-sand-200">
-                <h3 className="font-semibold text-sand-900 mb-2">Can I cancel my subscription anytime?</h3>
-                <p className="text-sand-600 text-sm">
+              <div className="p-5 rounded-xl bg-neutral-800 border border-neutral-700">
+                <h3 className="font-semibold text-foreground mb-2">Can I cancel my subscription anytime?</h3>
+                <p className="text-muted-foreground text-sm">
                   Yes, you can cancel anytime. Your account will remain active until the end of your billing period, and you can downgrade to the free plan.
                 </p>
               </div>
-              <div className="p-5 rounded-xl bg-white border border-sand-200">
-                <h3 className="font-semibold text-sand-900 mb-2">Do you offer refunds?</h3>
-                <p className="text-sand-600 text-sm">
+              <div className="p-5 rounded-xl bg-neutral-800 border border-neutral-700">
+                <h3 className="font-semibold text-foreground mb-2">Do you offer refunds?</h3>
+                <p className="text-muted-foreground text-sm">
                   We offer a 14-day free trial on the Pro plan. If you&apos;re not satisfied within the first 30 days after your trial ends, contact us for a full refund.
                 </p>
               </div>
@@ -516,26 +516,26 @@ export default function HomePage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-4 border-t border-sand-200">
+        <section className="py-4 border-t border-neutral-800">
           <div className="max-w-[1080px] mx-auto px-10">
-            <div className="relative overflow-hidden rounded-lg bg-sand-100 py-16 px-8">
+            <div className="relative overflow-hidden rounded-lg bg-neutral-800 py-16 px-8">
               <div
-                className="absolute inset-0 opacity-[0.25]"
+                className="absolute inset-0 opacity-[0.15]"
                 style={{
                   backgroundImage: `
-                    linear-gradient(to right, var(--sand-300) 1px, transparent 1px),
-                    linear-gradient(to bottom, var(--sand-300) 1px, transparent 1px)
+                    linear-gradient(to right, var(--neutral-600) 1px, transparent 1px),
+                    linear-gradient(to bottom, var(--neutral-600) 1px, transparent 1px)
                   `,
                   backgroundSize: '14px 14px'
                 }}
               />
               <div className="text-center relative z-10">
-                <h2 className="text-3xl font-bold mb-3 text-sand-900 tracking-tight">Ready to simplify your booking?</h2>
-                <p className="text-lg text-sand-600 mb-6 max-w-2xl mx-auto">
+                <h2 className="text-3xl font-bold mb-3 text-foreground tracking-tight">Ready to simplify your booking?</h2>
+                <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
                   Join independent providers who&apos;ve reclaimed their time.
                 </p>
                 <Link href="/login">
-                  <Button size="lg" className="gap-2 bg-sand-900 hover:bg-sand-800 text-sand-50">
+                  <Button size="lg" className="gap-2 bg-neutral-50 hover:bg-neutral-200 text-neutral-900">
                     Get started for free
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -547,35 +547,35 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-sand-200 pt-12 pb-8 bg-background relative overflow-hidden">
+      <footer className="border-t border-neutral-800 pt-12 pb-8 bg-background relative overflow-hidden">
         <div className="max-w-[1080px] mx-auto px-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
-              <p className="text-xl font-semibold tracking-tight text-sand-900">penciled.fyi</p>
-              <p className="text-sm text-sand-500 mt-1">Simple scheduling</p>
+              <p className="text-xl font-semibold tracking-tight text-foreground">penciled.fyi</p>
+              <p className="text-sm text-muted-foreground mt-1">Simple scheduling</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-sand-700 mb-3">Product</p>
-              <ul className="space-y-2 text-sm text-sand-500">
-                <li><Link href="#how-it-works" className="hover:text-sand-900 transition-colors">How it works</Link></li>
-                <li><Link href="/login" className="hover:text-sand-900 transition-colors">Get started</Link></li>
+              <p className="text-sm font-medium text-neutral-200 mb-3">Product</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link href="#how-it-works" className="hover:text-foreground transition-colors">How it works</Link></li>
+                <li><Link href="/login" className="hover:text-foreground transition-colors">Get started</Link></li>
               </ul>
             </div>
             <div>
-              <p className="text-sm font-medium text-sand-700 mb-3">Company</p>
-              <ul className="space-y-2 text-sm text-sand-500">
-                <li><a href="mailto:hello@penciled.fyi" className="hover:text-sand-900 transition-colors">Contact</a></li>
+              <p className="text-sm font-medium text-neutral-200 mb-3">Company</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><a href="mailto:hello@penciled.fyi" className="hover:text-foreground transition-colors">Contact</a></li>
               </ul>
             </div>
             <div>
-              <p className="text-sm font-medium text-sand-700 mb-3">Legal</p>
-              <ul className="space-y-2 text-sm text-sand-500">
-                <li><Link href="/privacy" className="hover:text-sand-900 transition-colors">Privacy</Link></li>
-                <li><Link href="/terms" className="hover:text-sand-900 transition-colors">Terms</Link></li>
+              <p className="text-sm font-medium text-neutral-200 mb-3">Legal</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link></li>
+                <li><Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link></li>
               </ul>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-sand-200 text-center text-sm text-sand-500">
+          <div className="mt-8 pt-8 border-t border-neutral-800 text-center text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} penciled.fyi. All rights reserved.
           </div>
         </div>

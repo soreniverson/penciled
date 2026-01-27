@@ -4,88 +4,64 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Sand color palette */
-  --sand-25: #fefdfb;
-  --sand-50: #fdfcf9;
-  --sand-100: #f9f7f3;
-  --sand-200: #f2efe8;
-  --sand-300: #e5e1d7;
-  --sand-400: #c9c4b7;
-  --sand-500: #a8a292;
-  --sand-600: #7d7869;
-  --sand-700: #5c584b;
-  --sand-800: #3a3832;
-  --sand-900: #262520;
-  --sand-950: #171612;
+  /* Neutral dark color palette */
+  --neutral-25: #fafafa;
+  --neutral-50: #f5f5f5;
+  --neutral-100: #e5e5e5;
+  --neutral-200: #d4d4d4;
+  --neutral-300: #a3a3a3;
+  --neutral-400: #737373;
+  --neutral-500: #525252;
+  --neutral-600: #404040;
+  --neutral-700: #262626;
+  --neutral-800: #1a1a1a;
+  --neutral-900: #0f0f0f;
+  --neutral-950: #0a0a0a;
 
-  /* Semantic colors */
-  --background: var(--sand-50);
-  --foreground: var(--sand-900);
-  --surface: #ffffff;
-  --primary: var(--sand-900);
-  --primary-light: var(--sand-700);
-  --primary-foreground: var(--sand-50);
+  /* Default to dark mode */
+  --background: var(--neutral-900);
+  --foreground: var(--neutral-50);
+  --surface: var(--neutral-800);
+  --primary: var(--neutral-50);
+  --primary-light: var(--neutral-300);
+  --primary-foreground: var(--neutral-900);
 
   /* Status colors for bookings */
   --status-pending: #f59e0b;
-  --status-confirmed: #10b981;
+  --status-confirmed: #22c55e;
   --status-cancelled: #ef4444;
   --status-completed: #6366f1;
 
   /* Component colors */
-  --radius: 0.625rem;
-  --card: var(--surface);
-  --card-foreground: var(--sand-900);
-  --popover: var(--surface);
-  --popover-foreground: var(--sand-900);
-  --secondary: var(--sand-100);
-  --secondary-foreground: var(--sand-900);
-  --muted: var(--sand-100);
-  --muted-foreground: var(--sand-600);
-  --accent: var(--sand-100);
-  --accent-foreground: var(--sand-900);
-  --destructive: #a54a4a;
-  --border: var(--sand-200);
-  --input: var(--sand-200);
-  --ring: var(--sand-400);
-  --chart-1: #2563eb;
-  --chart-2: #10b981;
+  --radius: 0.5rem;
+  --card: var(--neutral-800);
+  --card-foreground: var(--neutral-50);
+  --popover: var(--neutral-800);
+  --popover-foreground: var(--neutral-50);
+  --secondary: var(--neutral-700);
+  --secondary-foreground: var(--neutral-50);
+  --muted: var(--neutral-700);
+  --muted-foreground: var(--neutral-400);
+  --accent: var(--neutral-700);
+  --accent-foreground: var(--neutral-50);
+  --destructive: #dc2626;
+  --destructive-foreground: var(--neutral-50);
+  --border: var(--neutral-700);
+  --input: var(--neutral-700);
+  --ring: var(--neutral-500);
+  --chart-1: #3b82f6;
+  --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ec4899;
-  --sidebar: var(--surface);
-  --sidebar-foreground: var(--sand-900);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--sand-100);
-  --sidebar-accent-foreground: var(--sand-900);
-  --sidebar-border: var(--sand-200);
-  --sidebar-ring: var(--sand-400);
-}
-
-.dark {
-  --background: var(--sand-950);
-  --foreground: var(--sand-100);
-  --surface: var(--sand-900);
-  --card: var(--sand-900);
-  --card-foreground: var(--sand-100);
-  --popover: var(--sand-900);
-  --popover-foreground: var(--sand-100);
-  --secondary: var(--sand-800);
-  --secondary-foreground: var(--sand-100);
-  --muted: var(--sand-800);
-  --muted-foreground: var(--sand-400);
-  --accent: var(--sand-800);
-  --accent-foreground: var(--sand-100);
-  --border: var(--sand-800);
-  --input: var(--sand-800);
-  --ring: var(--sand-600);
-  --sidebar: var(--sand-900);
-  --sidebar-foreground: var(--sand-100);
-  --sidebar-accent: var(--sand-800);
-  --sidebar-accent-foreground: var(--sand-100);
-  --sidebar-border: var(--sand-800);
-  --sidebar-ring: var(--sand-600);
+  --sidebar: var(--neutral-800);
+  --sidebar-foreground: var(--neutral-50);
+  --sidebar-primary: var(--neutral-50);
+  --sidebar-primary-foreground: var(--neutral-900);
+  --sidebar-accent: var(--neutral-700);
+  --sidebar-accent-foreground: var(--neutral-50);
+  --sidebar-border: var(--neutral-700);
+  --sidebar-ring: var(--neutral-500);
 }
 
 @theme inline {
@@ -96,19 +72,19 @@
   --color-primary-light: var(--primary-light);
   --color-primary-foreground: var(--primary-foreground);
 
-  /* Sand colors */
-  --color-sand-25: var(--sand-25);
-  --color-sand-50: var(--sand-50);
-  --color-sand-100: var(--sand-100);
-  --color-sand-200: var(--sand-200);
-  --color-sand-300: var(--sand-300);
-  --color-sand-400: var(--sand-400);
-  --color-sand-500: var(--sand-500);
-  --color-sand-600: var(--sand-600);
-  --color-sand-700: var(--sand-700);
-  --color-sand-800: var(--sand-800);
-  --color-sand-900: var(--sand-900);
-  --color-sand-950: var(--sand-950);
+  /* Neutral colors */
+  --color-neutral-25: var(--neutral-25);
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
+  --color-neutral-950: var(--neutral-950);
 
   /* Status colors */
   --color-status-pending: var(--status-pending);
@@ -117,8 +93,7 @@
   --color-status-completed: var(--status-completed);
 
   /* Fonts */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-instrument-sans);
 
   /* Component colors */
   --color-card: var(--card);
@@ -132,6 +107,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -166,7 +142,7 @@
   body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
   }
 }
 
