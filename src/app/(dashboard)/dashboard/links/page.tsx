@@ -20,26 +20,35 @@ export default function LinksPage() {
 
   useEffect(() => {
     const loadLinks = async () => {
-      const supabase = createUntypedClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      try {
+        const supabase = createUntypedClient()
+        const { data: { user } } = await supabase.auth.getUser()
 
-      if (!user) return
+        if (!user) {
+          setLoading(false)
+          return
+        }
 
-      const { data } = await supabase
-        .from('booking_links')
-        .select(`
-          *,
-          booking_link_members (provider_id),
-          booking_link_services (service_id)
-        `)
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false })
+        const { data, error } = await supabase
+          .from('booking_links')
+          .select(`
+            *,
+            booking_link_members (provider_id),
+            booking_link_services (service_id)
+          `)
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false })
 
-      if (data) {
-        setLinks(data as BookingLinkWithMembers[])
+        if (error) {
+          console.error('Error loading links:', error)
+        } else if (data) {
+          setLinks(data as BookingLinkWithMembers[])
+        }
+      } catch (err) {
+        console.error('Error loading links:', err)
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     loadLinks()

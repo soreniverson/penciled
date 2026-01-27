@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, Check, Plus, X, CalendarOff, Trash2 } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Loader2, Check, Plus, X, Trash2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { Availability, InsertAvailability, BlackoutDate, InsertBlackoutDate } from '@/types/database'
 
@@ -42,6 +43,7 @@ export default function AvailabilityPage() {
 
   // Blackout dates state
   const [blackoutDates, setBlackoutDates] = useState<BlackoutDate[]>([])
+  const [blackoutModalOpen, setBlackoutModalOpen] = useState(false)
   const [newBlackoutStart, setNewBlackoutStart] = useState('')
   const [newBlackoutEnd, setNewBlackoutEnd] = useState('')
   const [newBlackoutReason, setNewBlackoutReason] = useState('')
@@ -190,10 +192,11 @@ export default function AvailabilityPage() {
         ))
       }
 
-      // Reset form
+      // Reset form and close modal
       setNewBlackoutStart('')
       setNewBlackoutEnd('')
       setNewBlackoutReason('')
+      setBlackoutModalOpen(false)
     } catch (error) {
       console.error('Error adding blackout date:', error)
     } finally {
@@ -364,69 +367,12 @@ export default function AvailabilityPage() {
       </Card>
 
       {/* Blackout Dates Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarOff className="size-5" />
-            Blackout Dates
-          </CardTitle>
-          <CardDescription>
-            Block specific dates when you&apos;re unavailable (vacations, holidays, etc.)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Add new blackout date form */}
-          <div className="flex flex-wrap gap-3 items-end p-4 bg-secondary/50 rounded-lg">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Start Date</label>
-              <Input
-                type="date"
-                className="w-[160px]"
-                value={newBlackoutStart}
-                onChange={(e) => setNewBlackoutStart(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">End Date</label>
-              <Input
-                type="date"
-                className="w-[160px]"
-                value={newBlackoutEnd}
-                onChange={(e) => setNewBlackoutEnd(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <label className="text-sm font-medium">Reason <span className="text-muted-foreground font-normal">(optional)</span></label>
-              <Input
-                placeholder="e.g., Vacation, Conference"
-                value={newBlackoutReason}
-                onChange={(e) => setNewBlackoutReason(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={addBlackoutDate}
-              disabled={!newBlackoutStart || !newBlackoutEnd || savingBlackout}
-            >
-              {savingBlackout ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <>
-                  <Plus className="size-4 mr-1" />
-                  Add
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* List of blackout dates */}
-          {blackoutDates.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No blackout dates set
-            </p>
-          ) : (
+      {blackoutDates.length > 0 && (
+        <Card>
+          <CardContent className="py-4">
             <div className="divide-y divide-border">
               {blackoutDates.map((blackout) => (
-                <div key={blackout.id} className="flex items-center justify-between py-3">
+                <div key={blackout.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                   <div>
                     <p className="font-medium">
                       {format(parseISO(blackout.start_date), 'MMM d, yyyy')}
@@ -454,9 +400,73 @@ export default function AvailabilityPage() {
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      <button
+        onClick={() => setBlackoutModalOpen(true)}
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        + Add blackout dates
+      </button>
+
+      {/* Blackout Date Modal */}
+      <Dialog open={blackoutModalOpen} onOpenChange={setBlackoutModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Blackout Dates</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Start Date</label>
+                <Input
+                  type="date"
+                  value={newBlackoutStart}
+                  onChange={(e) => setNewBlackoutStart(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">End Date</label>
+                <Input
+                  type="date"
+                  value={newBlackoutEnd}
+                  onChange={(e) => setNewBlackoutEnd(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Reason <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <Input
+                placeholder="e.g., Vacation, Conference"
+                value={newBlackoutReason}
+                onChange={(e) => setNewBlackoutReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBlackoutModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={addBlackoutDate}
+              disabled={!newBlackoutStart || !newBlackoutEnd || savingBlackout}
+            >
+              {savingBlackout ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                'Add'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
