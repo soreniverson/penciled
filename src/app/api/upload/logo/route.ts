@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     // Update provider record with logo URL
     const { error: updateError } = await adminClient
       .from('providers')
+      // @ts-expect-error - logo_url column exists but types not regenerated
       .update({ logo_url: publicUrl })
       .eq('id', user.id)
 
@@ -91,7 +92,7 @@ export async function DELETE(request: Request) {
       .from('providers')
       .select('logo_url')
       .eq('id', user.id)
-      .single()
+      .single() as { data: { logo_url: string | null } | null }
 
     if (provider?.logo_url) {
       // Extract filename from URL
@@ -104,6 +105,7 @@ export async function DELETE(request: Request) {
     // Clear logo URL from provider record
     const { error: updateError } = await adminClient
       .from('providers')
+      // @ts-expect-error - logo_url column exists but types not regenerated
       .update({ logo_url: null })
       .eq('id', user.id)
 
