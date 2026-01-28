@@ -133,8 +133,8 @@ export function generateTimeSlots(
       })
 
       slots.push({
-        start: slotStart,
-        end: slotEnd,
+        start: slotStartUTC,
+        end: slotEndUTC,
         available: !isPast && !hasConflict && !hasExternalConflict,
       })
 
