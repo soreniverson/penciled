@@ -138,36 +138,39 @@ export async function POST(request: Request) {
         bookingMode,
       }))
 
-      // Send different emails based on booking mode
-      if (bookingMode === 'request') {
-        Promise.all([
-          sendBookingRequestToClient(emailData),
-          sendBookingRequestToProvider(emailData),
-        ]).then(results => {
+      // Send emails and create calendar event (must await in serverless)
+      try {
+        if (bookingMode === 'request') {
+          const results = await Promise.all([
+            sendBookingRequestToClient(emailData),
+            sendBookingRequestToProvider(emailData),
+          ])
           console.log('Request emails sent:', results)
-        }).catch(err => console.error('Email sending failed:', err))
-      } else {
-        Promise.all([
-          sendBookingConfirmationToClient(emailData),
-          sendBookingNotificationToProvider(emailData),
-        ]).then(results => {
-          console.log('Confirmation emails sent:', results)
-        }).catch(err => console.error('Email sending failed:', err))
-
-        // Create Google Calendar event for instant bookings
-        createCalendarEvent(
-          provider_id,
-          {
-            id: booking.id,
-            client_name,
-            client_email,
-            client_phone,
-            start_time,
-            end_time,
-            notes,
-          },
-          serviceName
-        ).catch(err => console.error('Calendar event creation failed:', err))
+        } else {
+          const [emailResults, calendarResult] = await Promise.all([
+            Promise.all([
+              sendBookingConfirmationToClient(emailData),
+              sendBookingNotificationToProvider(emailData),
+            ]),
+            createCalendarEvent(
+              provider_id,
+              {
+                id: booking.id,
+                client_name,
+                client_email,
+                client_phone,
+                start_time,
+                end_time,
+                notes,
+              },
+              serviceName
+            ),
+          ])
+          console.log('Confirmation emails sent:', emailResults, 'Calendar event:', calendarResult)
+        }
+      } catch (err) {
+        console.error('Email/calendar error:', err)
+        // Don't fail the booking if emails fail
       }
     }
 
