@@ -116,6 +116,7 @@ export async function POST(request: Request) {
     const serviceName = serviceData?.name || 'Appointment'
 
     // Send emails (don't block response on email delivery)
+    console.log('Email check - provider:', !!provider, 'booking:', !!booking, 'provider data:', JSON.stringify(provider))
     if (provider && booking) {
       const emailData = {
         bookingId: booking.id,
@@ -130,17 +131,28 @@ export async function POST(request: Request) {
         timezone: provider.timezone,
       }
 
+      console.log('Sending booking emails with data:', JSON.stringify({
+        bookingId: emailData.bookingId,
+        providerEmail: emailData.providerEmail,
+        clientEmail: emailData.clientEmail,
+        bookingMode,
+      }))
+
       // Send different emails based on booking mode
       if (bookingMode === 'request') {
         Promise.all([
           sendBookingRequestToClient(emailData),
           sendBookingRequestToProvider(emailData),
-        ]).catch(err => console.error('Email sending failed:', err))
+        ]).then(results => {
+          console.log('Request emails sent:', results)
+        }).catch(err => console.error('Email sending failed:', err))
       } else {
         Promise.all([
           sendBookingConfirmationToClient(emailData),
           sendBookingNotificationToProvider(emailData),
-        ]).catch(err => console.error('Email sending failed:', err))
+        ]).then(results => {
+          console.log('Confirmation emails sent:', results)
+        }).catch(err => console.error('Email sending failed:', err))
 
         // Create Google Calendar event for instant bookings
         createCalendarEvent(
