@@ -17,6 +17,7 @@ type BookingEmailData = {
   startTime: Date
   endTime: Date
   timezone: string
+  notes?: string | null
 }
 
 export async function sendBookingConfirmationToClient(data: BookingEmailData) {
@@ -74,7 +75,7 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingNotificationToProvider(data: BookingEmailData) {
-  const { providerEmail, providerName, clientName, clientEmail, serviceName, startTime, endTime } = data
+  const { providerEmail, providerName, clientName, clientEmail, serviceName, startTime, endTime, notes } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -106,7 +107,12 @@ export async function sendBookingNotificationToProvider(data: BookingEmailData) 
             <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
             <p style="margin: 0;"><strong>Email:</strong> ${clientEmail}</p>
           </div>
-
+          ${notes ? `
+          <div style="background: #fef3c7; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0; font-size: 14px;"><strong>Notes from client:</strong></p>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">${notes}</p>
+          </div>
+          ` : ''}
           <p style="margin-bottom: 24px;">
             <a href="${dashboardUrl}" style="display: inline-block; background: #1a1a1a; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">View in Dashboard</a>
           </p>
@@ -236,7 +242,7 @@ export async function sendBookingRequestToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingRequestToProvider(data: BookingEmailData) {
-  const { providerEmail, providerName, clientName, clientEmail, serviceName, startTime, endTime } = data
+  const { providerEmail, providerName, clientName, clientEmail, serviceName, startTime, endTime, notes } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -268,7 +274,12 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
             <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
             <p style="margin: 0;"><strong>Email:</strong> ${clientEmail}</p>
           </div>
-
+          ${notes ? `
+          <div style="background: #f5f5f4; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0; font-size: 14px;"><strong>Notes from client:</strong></p>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">${notes}</p>
+          </div>
+          ` : ''}
           <p style="margin-bottom: 24px;">
             <a href="${dashboardUrl}" style="display: inline-block; background: #1a1a1a; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">Review Request</a>
           </p>

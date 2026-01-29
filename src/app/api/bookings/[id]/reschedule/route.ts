@@ -34,10 +34,11 @@ export async function POST(request: Request, { params }: RouteContext) {
     const { data: booking } = await supabase
       .from('bookings')
       .select(`
-        id, management_token, google_event_id, provider_id, service_id,
-        client_name, client_email,
-        providers:provider_id (id, name, business_name, email, timezone),
-        services:service_id (name)
+        id, management_token, google_event_id, provider_id, service_id, booking_link_id,
+        client_name, client_email, notes,
+        providers:provider_id (id, name, business_name, email, timezone, google_calendar_token),
+        services:service_id (name),
+        booking_links:booking_link_id (name)
       `)
       .eq('id', id)
       .single() as { data: {
@@ -46,10 +47,13 @@ export async function POST(request: Request, { params }: RouteContext) {
         google_event_id: string | null
         provider_id: string
         service_id: string
+        booking_link_id: string | null
         client_name: string
         client_email: string
-        providers: { id: string; name: string | null; business_name: string | null; email: string; timezone: string } | null
+        notes: string | null
+        providers: { id: string; name: string | null; business_name: string | null; email: string; timezone: string; google_calendar_token: unknown } | null
         services: { name: string } | null
+        booking_links: { name: string } | null
       } | null }
 
     if (!booking || booking.management_token !== token) {
@@ -90,38 +94,99 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Failed to reschedule' }, { status: 500 })
     }
 
-    // Send updated confirmation emails
-    const provider = booking.providers
+    // Determine display name and get team members
     const service = booking.services
+    const provider = booking.providers
+    let displayName = booking.booking_links?.name || provider?.business_name || provider?.name || 'Your provider'
 
-    if (provider && service) {
-      const emailData = {
+    type TeamMember = {
+      id: string
+      name: string | null
+      business_name: string | null
+      email: string
+      timezone: string
+      google_calendar_token: unknown
+    }
+
+    let teamMembers: TeamMember[] = []
+
+    if (booking.booking_link_id) {
+      // Fetch all team members for notifications
+      const { data: members } = await supabase
+        .from('booking_link_members')
+        .select(`
+          provider_id,
+          is_required,
+          providers:provider_id (
+            id, name, business_name, email, timezone, google_calendar_token
+          )
+        `)
+        .eq('booking_link_id', booking.booking_link_id)
+        .eq('is_required', true) as { data: { providers: TeamMember | TeamMember[] | null }[] | null }
+
+      if (members) {
+        teamMembers = members
+          .map((m) => {
+            const p = m.providers
+            return Array.isArray(p) ? p[0] : p
+          })
+          .filter((p): p is TeamMember => p !== null)
+      }
+    } else if (provider) {
+      // Single provider booking
+      teamMembers = [{
+        id: provider.id,
+        name: provider.name,
+        business_name: provider.business_name,
+        email: provider.email,
+        timezone: provider.timezone,
+        google_calendar_token: provider.google_calendar_token,
+      }]
+    }
+
+    if (service && teamMembers.length > 0) {
+      const primaryMember = teamMembers[0]
+
+      const baseEmailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
         serviceName: service.name,
-        providerName: provider.business_name || provider.name || 'Your provider',
-        providerEmail: provider.email,
+        providerName: displayName,
         clientName: booking.client_name,
         clientEmail: booking.client_email,
         startTime: new Date(start_time),
         endTime: new Date(end_time),
-        timezone: provider.timezone,
+        timezone: primaryMember.timezone,
+        notes: booking.notes,
       }
 
-      // Send emails (using the confirmation emails with "rescheduled" context would be better,
-      // but for now reusing confirmation emails)
-      Promise.all([
-        sendBookingConfirmationToClient(emailData),
-        sendBookingNotificationToProvider(emailData),
-      ]).catch(err => console.error('Reschedule email sending failed:', err))
-    }
+      try {
+        // Send rescheduled confirmation to client
+        await sendBookingConfirmationToClient({ ...baseEmailData, providerEmail: primaryMember.email })
 
-    // Update Google Calendar event if it exists
-    if (booking.google_event_id) {
-      updateCalendarEvent(booking.provider_id, booking.google_event_id, {
-        start_time,
-        end_time,
-      }).catch(err => console.error('Calendar event update failed:', err))
+        // Notify all team members about the reschedule
+        await Promise.all(
+          teamMembers.map(async (member) => {
+            await sendBookingNotificationToProvider({
+              ...baseEmailData,
+              providerEmail: member.email,
+            })
+
+            // Update calendar event for each team member who has Google connected
+            // Note: We need to track google_event_id per member for this to work properly
+            // For now, update the primary member's calendar event
+            if (member.id === booking.provider_id && booking.google_event_id && member.google_calendar_token) {
+              await updateCalendarEvent(member.id, booking.google_event_id, {
+                start_time,
+                end_time,
+              }).catch(err => console.error(`Calendar update failed for ${member.email}:`, err))
+            }
+          })
+        )
+      } catch (err) {
+        console.error('Reschedule email/calendar error:', err)
+        // Don't fail the reschedule if emails fail
+      }
     }
 
     return NextResponse.json({ success: true })

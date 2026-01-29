@@ -186,9 +186,13 @@ export async function POST(request: Request) {
         startTime: new Date(start_time),
         endTime: new Date(end_time),
         timezone: primaryMember.timezone,
+        notes: notes || null,
       }
 
-      console.log('Sending booking emails to team:', teamMembers.map(m => m.email))
+      console.log('Sending booking emails to team:', teamMembers.map(m => ({
+        email: m.email,
+        hasGoogleCalendar: !!m.google_calendar_token
+      })))
 
       try {
         // Send client email once
