@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       start_time,
       end_time,
       notes,
+      booking_link_id,
     } = body
 
     const supabase = await createClient()
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
       end_time,
       notes: notes || null,
       status: bookingMode === 'request' ? 'pending' : 'confirmed',
+      booking_link_id: booking_link_id || null,
     }
     const { data: booking, error } = await supabase
       .from('bookings')
@@ -106,68 +108,132 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch provider and service info for emails
-    const { data: provider } = await supabase
-      .from('providers')
-      .select('name, business_name, email, timezone')
-      .eq('id', provider_id)
-      .single() as { data: { name: string | null; business_name: string | null; email: string; timezone: string } | null }
-
     const serviceName = serviceData?.name || 'Appointment'
 
-    // Send emails (don't block response on email delivery)
-    console.log('Email check - provider:', !!provider, 'booking:', !!booking, 'provider data:', JSON.stringify(provider))
-    if (provider && booking) {
-      const emailData = {
+    // Determine team members to notify
+    type TeamMember = {
+      id: string
+      name: string | null
+      business_name: string | null
+      email: string
+      timezone: string
+      google_calendar_token: unknown
+    }
+
+    let teamMembers: TeamMember[] = []
+    let displayName = ''
+
+    if (booking_link_id) {
+      // Fetch booking link info and all required team members
+      const { data: linkData } = await supabase
+        .from('booking_links')
+        .select('name')
+        .eq('id', booking_link_id)
+        .single() as { data: { name: string } | null }
+
+      const { data: members } = await supabase
+        .from('booking_link_members')
+        .select(`
+          provider_id,
+          is_required,
+          providers:provider_id (
+            id,
+            name,
+            business_name,
+            email,
+            timezone,
+            google_calendar_token
+          )
+        `)
+        .eq('booking_link_id', booking_link_id)
+        .eq('is_required', true)
+
+      if (members) {
+        teamMembers = members
+          .map((m: { providers: TeamMember | TeamMember[] | null }) => {
+            const p = m.providers
+            return Array.isArray(p) ? p[0] : p
+          })
+          .filter((p): p is TeamMember => p !== null)
+      }
+
+      displayName = linkData?.name || 'Your team'
+    } else {
+      // Single provider booking
+      const { data: provider } = await supabase
+        .from('providers')
+        .select('id, name, business_name, email, timezone, google_calendar_token')
+        .eq('id', provider_id)
+        .single() as { data: TeamMember | null }
+
+      if (provider) {
+        teamMembers = [provider]
+        displayName = provider.business_name || provider.name || 'Your provider'
+      }
+    }
+
+    // Send emails and create calendar events for all team members
+    if (teamMembers.length > 0 && booking) {
+      const primaryMember = teamMembers[0]
+
+      const baseEmailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
         serviceName,
-        providerName: provider.business_name || provider.name || 'Your provider',
-        providerEmail: provider.email,
+        providerName: displayName,
         clientName: client_name,
         clientEmail: client_email,
         startTime: new Date(start_time),
         endTime: new Date(end_time),
-        timezone: provider.timezone,
+        timezone: primaryMember.timezone,
       }
 
-      console.log('Sending booking emails with data:', JSON.stringify({
-        bookingId: emailData.bookingId,
-        providerEmail: emailData.providerEmail,
-        clientEmail: emailData.clientEmail,
-        bookingMode,
-      }))
+      console.log('Sending booking emails to team:', teamMembers.map(m => m.email))
 
-      // Send emails and create calendar event (must await in serverless)
       try {
+        // Send client email once
         if (bookingMode === 'request') {
-          const results = await Promise.all([
-            sendBookingRequestToClient(emailData),
-            sendBookingRequestToProvider(emailData),
-          ])
-          console.log('Request emails sent:', results)
+          await sendBookingRequestToClient({ ...baseEmailData, providerEmail: primaryMember.email })
         } else {
-          const [emailResults, calendarResult] = await Promise.all([
-            Promise.all([
-              sendBookingConfirmationToClient(emailData),
-              sendBookingNotificationToProvider(emailData),
-            ]),
-            createCalendarEvent(
-              provider_id,
-              {
-                id: booking.id,
-                client_name,
-                client_email,
-                client_phone,
-                start_time,
-                end_time,
-                notes,
-              },
-              serviceName
-            ),
-          ])
-          console.log('Confirmation emails sent:', emailResults, 'Calendar event:', calendarResult)
+          await sendBookingConfirmationToClient({ ...baseEmailData, providerEmail: primaryMember.email })
         }
+
+        // Send provider notifications and create calendar events for ALL team members
+        await Promise.all(
+          teamMembers.map(async (member) => {
+            const memberEmailData = {
+              ...baseEmailData,
+              providerEmail: member.email,
+              providerName: displayName,
+            }
+
+            // Send email to this team member
+            if (bookingMode === 'request') {
+              await sendBookingRequestToProvider(memberEmailData)
+            } else {
+              await sendBookingNotificationToProvider(memberEmailData)
+            }
+
+            // Create calendar event if they have Google connected (instant bookings only)
+            if (bookingMode !== 'request' && member.google_calendar_token) {
+              await createCalendarEvent(
+                member.id,
+                {
+                  id: booking.id,
+                  client_name,
+                  client_email,
+                  client_phone,
+                  start_time,
+                  end_time,
+                  notes,
+                },
+                serviceName
+              )
+            }
+          })
+        )
+
+        console.log('All team notifications sent successfully')
       } catch (err) {
         console.error('Email/calendar error:', err)
         // Don't fail the booking if emails fail

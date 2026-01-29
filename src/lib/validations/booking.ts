@@ -13,6 +13,7 @@ export const createBookingSchema = z.object({
   start_time: z.string().datetime({ message: 'Invalid start time format' }),
   end_time: z.string().datetime({ message: 'Invalid end time format' }),
   notes: z.string().max(1000, 'Notes too long').optional().nullable(),
+  booking_link_id: z.string().regex(uuidRegex, 'Invalid booking link ID').optional().nullable(),
 }).refine(
   (data) => new Date(data.end_time) > new Date(data.start_time),
   { message: 'End time must be after start time', path: ['end_time'] }

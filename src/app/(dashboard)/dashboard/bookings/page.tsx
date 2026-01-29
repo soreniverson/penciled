@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { Calendar, Clock, Mail, Phone, User } from 'lucide-react'
+import { Calendar, Clock, Mail, Phone, User, Users } from 'lucide-react'
 import { CancelBookingButton } from './cancel-button'
 import { CompleteBookingButton } from './complete-button'
 import { ApproveBookingButton, DeclineBookingButton } from './approve-button'
@@ -11,6 +11,8 @@ import type { Booking, Service } from '@/types/database'
 
 type BookingWithService = Booking & {
   services: Pick<Service, 'name' | 'duration_minutes'> | null
+  booking_links?: { name: string } | null
+  isTeamBooking?: boolean
 }
 
 export default async function BookingsPage() {
@@ -21,12 +23,21 @@ export default async function BookingsPage() {
     redirect('/login')
   }
 
-  // Get all upcoming bookings
-  const { data: bookings } = await supabase
+  // Get booking links where user is a member (for team bookings)
+  const { data: memberLinks } = await supabase
+    .from('booking_link_members')
+    .select('booking_link_id')
+    .eq('provider_id', user.id) as { data: { booking_link_id: string }[] | null }
+
+  const teamLinkIds = memberLinks?.map(m => m.booking_link_id) || []
+
+  // Get all upcoming bookings (own + team)
+  const { data: ownBookings } = await supabase
     .from('bookings')
     .select(`
       *,
-      services (name, duration_minutes)
+      services (name, duration_minutes),
+      booking_links (name)
     `)
     .eq('provider_id', user.id)
     .in('status', ['confirmed', 'pending'])
@@ -34,7 +45,31 @@ export default async function BookingsPage() {
     .order('start_time', { ascending: true })
     .returns<BookingWithService[]>()
 
-  // Get past bookings (last 30 days)
+  // Get team bookings (where user is a team member but not the provider)
+  let teamBookings: BookingWithService[] = []
+  if (teamLinkIds.length > 0) {
+    const { data: teamData } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        services (name, duration_minutes),
+        booking_links (name)
+      `)
+      .in('booking_link_id', teamLinkIds)
+      .neq('provider_id', user.id)
+      .in('status', ['confirmed', 'pending'])
+      .gte('start_time', new Date().toISOString())
+      .order('start_time', { ascending: true })
+      .returns<BookingWithService[]>()
+
+    teamBookings = (teamData || []).map(b => ({ ...b, isTeamBooking: true }))
+  }
+
+  // Combine and sort bookings
+  const bookings = [...(ownBookings || []), ...teamBookings]
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+
+  // Get past bookings (last 30 days) - own only for simplicity
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
@@ -42,7 +77,8 @@ export default async function BookingsPage() {
     .from('bookings')
     .select(`
       *,
-      services (name, duration_minutes)
+      services (name, duration_minutes),
+      booking_links (name)
     `)
     .eq('provider_id', user.id)
     .lt('start_time', new Date().toISOString())
@@ -72,6 +108,12 @@ export default async function BookingsPage() {
                           booking.status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
                         }`} />
                         <span className="font-medium">{booking.services?.name}</span>
+                        {booking.booking_links?.name && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                            <Users className="size-3" />
+                            {booking.booking_links.name}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">

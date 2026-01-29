@@ -34,17 +34,18 @@ export async function POST(request: Request, { params }: RouteContext) {
     const { data: booking } = await supabase
       .from('bookings')
       .select(`
-        id, management_token, provider_id, status,
+        id, management_token, provider_id, booking_link_id, status,
         client_name, client_email, client_phone, start_time, end_time, notes,
-        providers:provider_id (name, business_name, email, timezone),
-        services:service_id (name)
+        providers:provider_id (id, name, business_name, email, timezone, google_calendar_token),
+        services:service_id (name),
+        booking_links:booking_link_id (name)
       `)
       .eq('id', id)
-      .eq('provider_id', user.id)
       .single() as { data: {
         id: string
         management_token: string
         provider_id: string
+        booking_link_id: string | null
         status: string
         client_name: string
         client_email: string
@@ -52,12 +53,31 @@ export async function POST(request: Request, { params }: RouteContext) {
         start_time: string
         end_time: string
         notes: string | null
-        providers: { name: string | null; business_name: string | null; email: string; timezone: string } | null
+        providers: { id: string; name: string | null; business_name: string | null; email: string; timezone: string; google_calendar_token: unknown } | null
         services: { name: string } | null
+        booking_links: { name: string } | null
       } | null }
 
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
+
+    // Check if user can approve (is provider or team member)
+    let canApprove = booking.provider_id === user.id
+
+    if (!canApprove && booking.booking_link_id) {
+      const { data: membership } = await supabase
+        .from('booking_link_members')
+        .select('id')
+        .eq('booking_link_id', booking.booking_link_id)
+        .eq('provider_id', user.id)
+        .single()
+
+      canApprove = !!membership
+    }
+
+    if (!canApprove) {
+      return NextResponse.json({ error: 'Not authorized to approve this booking' }, { status: 403 })
     }
 
     if (booking.status !== 'pending') {
@@ -77,42 +97,95 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Failed to approve' }, { status: 500 })
     }
 
-    // Send approval email to client
-    const provider = booking.providers
+    // Determine display name and get team members
     const service = booking.services
+    const provider = booking.providers
+    let displayName = booking.booking_links?.name || provider?.business_name || provider?.name || 'Your provider'
 
-    if (provider && service) {
-      const emailData = {
+    type TeamMember = {
+      id: string
+      name: string | null
+      business_name: string | null
+      email: string
+      timezone: string
+      google_calendar_token: unknown
+    }
+
+    let teamMembers: TeamMember[] = []
+
+    if (booking.booking_link_id) {
+      // Fetch all team members for notifications
+      const { data: members } = await supabase
+        .from('booking_link_members')
+        .select(`
+          provider_id,
+          is_required,
+          providers:provider_id (
+            id, name, business_name, email, timezone, google_calendar_token
+          )
+        `)
+        .eq('booking_link_id', booking.booking_link_id)
+        .eq('is_required', true)
+
+      if (members) {
+        teamMembers = members
+          .map((m: { providers: TeamMember | TeamMember[] | null }) => {
+            const p = m.providers
+            return Array.isArray(p) ? p[0] : p
+          })
+          .filter((p): p is TeamMember => p !== null)
+      }
+    } else if (provider) {
+      // Single provider booking
+      teamMembers = [{
+        id: provider.id,
+        name: provider.name,
+        business_name: provider.business_name,
+        email: provider.email,
+        timezone: provider.timezone,
+        google_calendar_token: provider.google_calendar_token,
+      }]
+    }
+
+    if (service && teamMembers.length > 0) {
+      const primaryMember = teamMembers[0]
+
+      const baseEmailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
         serviceName: service.name,
-        providerName: provider.business_name || provider.name || 'Your provider',
-        providerEmail: provider.email,
+        providerName: displayName,
         clientName: booking.client_name,
         clientEmail: booking.client_email,
         startTime: new Date(booking.start_time),
         endTime: new Date(booking.end_time),
-        timezone: provider.timezone,
+        timezone: primaryMember.timezone,
       }
 
-      sendBookingApprovalToClient(emailData).catch(err =>
-        console.error('Approval email sending failed:', err)
-      )
+      // Send approval email to client
+      await sendBookingApprovalToClient({ ...baseEmailData, providerEmail: primaryMember.email })
+        .catch(err => console.error('Approval email sending failed:', err))
 
-      // Create Google Calendar event now that booking is confirmed
-      createCalendarEvent(
-        booking.provider_id,
-        {
-          id: booking.id,
-          client_name: booking.client_name,
-          client_email: booking.client_email,
-          client_phone: booking.client_phone,
-          start_time: booking.start_time,
-          end_time: booking.end_time,
-          notes: booking.notes,
-        },
-        service.name
-      ).catch(err => console.error('Calendar event creation failed:', err))
+      // Create calendar events for ALL team members with Google connected
+      await Promise.all(
+        teamMembers.map(async (member) => {
+          if (member.google_calendar_token) {
+            await createCalendarEvent(
+              member.id,
+              {
+                id: booking.id,
+                client_name: booking.client_name,
+                client_email: booking.client_email,
+                client_phone: booking.client_phone,
+                start_time: booking.start_time,
+                end_time: booking.end_time,
+                notes: booking.notes,
+              },
+              service.name
+            ).catch(err => console.error(`Calendar event creation failed for ${member.email}:`, err))
+          }
+        })
+      )
     }
 
     return NextResponse.json({ success: true })
