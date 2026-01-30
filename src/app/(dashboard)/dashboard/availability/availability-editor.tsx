@@ -243,7 +243,7 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
       </div>
 
       <Card>
-        <CardContent className="py-4 divide-y divide-border">
+        <CardContent className="py-2 divide-y divide-border">
           {DAYS.map((day) => (
             <div key={day.value} className="py-3 first:pt-0 last:pb-0">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-h-10">

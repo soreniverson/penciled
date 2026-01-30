@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Link2, Copy, Check, ExternalLink, Users } from 'lucide-react'
+import { Plus, Copy, Check, ExternalLink, Users } from 'lucide-react'
 import Link from 'next/link'
 import type { BookingLink } from '@/types/database'
 
@@ -29,30 +29,21 @@ export function LinksList({ links }: Props) {
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Team Links</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
         <Link href="/dashboard/links/new">
-          <Button>
-            <Plus className="size-4 mr-2" />
-            New Link
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+            <Plus className="size-5" />
           </Button>
         </Link>
       </div>
 
-      <p className="text-muted-foreground">
-        Create booking links that check availability across multiple team members.
-      </p>
-
       {links.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Link2 className="size-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="font-medium mb-1">No team links yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Create a link to schedule meetings with multiple team members.
-            </p>
+            <Users className="size-12 mx-auto text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">No team links yet</p>
             <Link href="/dashboard/links/new">
-              <Button>
-                <Plus className="size-4 mr-2" />
+              <Button variant="link" className="mt-2">
                 Create your first link
               </Button>
             </Link>

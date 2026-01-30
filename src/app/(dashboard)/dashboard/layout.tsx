@@ -15,9 +15,9 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50">
+    <div className="min-h-screen bg-background pb-20 sm:pb-0">
+      {/* Desktop Header */}
+      <header className="sticky top-0 z-50 hidden sm:block">
         <div className="flex h-16 items-center justify-center px-4 md:px-6">
           <DashboardNav />
         </div>
@@ -27,6 +27,11 @@ export default async function DashboardLayout({
       <main className="p-4 md:p-6 max-w-7xl mx-auto">
         {children}
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 sm:hidden">
+        <DashboardNav />
+      </div>
     </div>
   )
 }

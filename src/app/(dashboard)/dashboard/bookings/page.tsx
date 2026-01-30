@@ -1,9 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
-import { Calendar, Clock, Mail, Phone, User, Users } from 'lucide-react'
+import { Calendar, Mail, Phone, User, Users } from 'lucide-react'
 import { CancelBookingButton } from './cancel-button'
 import { CompleteBookingButton } from './complete-button'
 import { ApproveBookingButton, DeclineBookingButton } from './approve-button'
@@ -89,126 +88,135 @@ export default async function BookingsPage() {
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Bookings</h1>
-      </div>
-
-      {/* Upcoming Bookings */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium">Upcoming</h2>
-        {bookings && bookings.length > 0 ? (
-          <div className="space-y-3">
-            {bookings.map((booking) => (
-              <Card key={booking.id}>
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`size-2 rounded-full ${
-                          booking.status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
-                        }`} />
-                        <span className="font-medium">{booking.meetings?.name}</span>
-                        {booking.booking_links?.name && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                            <Users className="size-3" />
-                            {booking.booking_links.name}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="size-4" />
-                          {format(new Date(booking.start_time), 'EEE, MMM d')}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-4" />
-                          {format(new Date(booking.start_time), 'h:mm a')} - {format(new Date(booking.end_time), 'h:mm a')}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <User className="size-4" />
-                          {booking.client_name}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Mail className="size-4" />
-                          {booking.client_email}
-                        </span>
-                        {booking.client_phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="size-4" />
-                            {booking.client_phone}
-                          </span>
-                        )}
-                      </div>
-                      {booking.notes && (
-                        <p className="text-sm text-muted-foreground mt-2 p-2 bg-muted rounded">
-                          {booking.notes}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      {booking.status === 'pending' ? (
-                        <>
-                          <ApproveBookingButton bookingId={booking.id} clientName={booking.client_name} />
-                          <DeclineBookingButton bookingId={booking.id} clientName={booking.client_name} />
-                        </>
-                      ) : (
-                        <CancelBookingButton bookingId={booking.id} clientName={booking.client_name} />
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <Calendar className="size-12 mx-auto mb-4 opacity-50" />
-              <p>No upcoming bookings</p>
-            </CardContent>
-          </Card>
+      <div className="flex items-center gap-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Upcoming</h1>
+        {pastBookings && pastBookings.length > 0 && (
+          <a href="#past" className="text-2xl font-semibold tracking-tight text-muted-foreground hover:text-foreground transition-colors">
+            Past
+          </a>
         )}
       </div>
 
-      {/* Past Bookings */}
-      {pastBookings && pastBookings.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium">Past (last 30 days)</h2>
-          <div className="space-y-3">
-            {pastBookings.map((booking) => (
-              <Card key={booking.id} className="opacity-75">
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`size-2 rounded-full ${
-                          booking.status === 'completed' ? 'bg-blue-500' :
-                          booking.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-500'
-                        }`} />
-                        <span className="font-medium">{booking.meetings?.name}</span>
-                        <span className="text-xs text-muted-foreground capitalize">({booking.status})</span>
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="size-4" />
-                          {format(new Date(booking.start_time), 'EEE, MMM d')}
+      {/* Upcoming Bookings */}
+      {bookings && bookings.length > 0 ? (
+        <div className="space-y-2">
+          {bookings.map((booking) => (
+            <Card key={booking.id}>
+              <CardContent className="p-3">
+                <div className="flex items-start gap-3">
+                  {/* Date box */}
+                  <div className="shrink-0 w-12 h-12 rounded-lg bg-muted border border-border flex flex-col items-center justify-center">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none">
+                      {format(new Date(booking.start_time), 'MMM')}
+                    </span>
+                    <span className="text-lg font-semibold leading-none mt-0.5">
+                      {format(new Date(booking.start_time), 'd')}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`size-2 rounded-full shrink-0 ${
+                        booking.status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
+                      }`} />
+                      <span className="font-medium truncate">{booking.meetings?.name}</span>
+                      {booking.booking_links?.name && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0">
+                          <Users className="size-3" />
+                          {booking.booking_links.name}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <User className="size-4" />
-                          {booking.client_name}
-                        </span>
-                      </div>
+                      )}
                     </div>
-                    {booking.status === 'confirmed' && (
-                      <CompleteBookingButton bookingId={booking.id} />
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
+                      <span>{format(new Date(booking.start_time), 'h:mm a')} – {format(new Date(booking.end_time), 'h:mm a')}</span>
+                      <span className="flex items-center gap-1">
+                        <User className="size-3.5" />
+                        {booking.client_name}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Mail className="size-3.5" />
+                        {booking.client_email}
+                      </span>
+                      {booking.client_phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="size-3.5" />
+                          {booking.client_phone}
+                        </span>
+                      )}
+                    </div>
+                    {booking.notes && (
+                      <p className="text-sm text-muted-foreground mt-2 p-2 bg-muted rounded text-xs">
+                        {booking.notes}
+                      </p>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {booking.status === 'pending' ? (
+                      <>
+                        <ApproveBookingButton bookingId={booking.id} clientName={booking.client_name} />
+                        <DeclineBookingButton bookingId={booking.id} clientName={booking.client_name} />
+                      </>
+                    ) : (
+                      <CancelBookingButton bookingId={booking.id} clientName={booking.client_name} />
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <Calendar className="size-12 mx-auto mb-4 opacity-50" />
+            <p>No upcoming bookings</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Past Bookings */}
+      {pastBookings && pastBookings.length > 0 && (
+        <div id="past" className="space-y-2 pt-4">
+          <h2 className="text-lg font-medium text-muted-foreground mb-3">Past</h2>
+          {pastBookings.map((booking) => (
+            <Card key={booking.id} className="opacity-60">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
+                  {/* Date box */}
+                  <div className="shrink-0 w-12 h-12 rounded-lg bg-muted border border-border flex flex-col items-center justify-center">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none">
+                      {format(new Date(booking.start_time), 'MMM')}
+                    </span>
+                    <span className="text-lg font-semibold leading-none mt-0.5">
+                      {format(new Date(booking.start_time), 'd')}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`size-2 rounded-full shrink-0 ${
+                        booking.status === 'completed' ? 'bg-blue-500' :
+                        booking.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-500'
+                      }`} />
+                      <span className="font-medium truncate">{booking.meetings?.name}</span>
+                      <span className="text-xs text-muted-foreground capitalize">({booking.status})</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                      <span className="flex items-center gap-1">
+                        <User className="size-3.5" />
+                        {booking.client_name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {booking.status === 'confirmed' && (
+                    <CompleteBookingButton bookingId={booking.id} />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>

@@ -30,9 +30,8 @@ export default async function MeetingsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
         </div>
         <MeetingForm providerId={user.id}>
-          <Button>
-            <Plus className="size-4 mr-2" />
-            Add Meeting
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+            <Plus className="size-5" />
           </Button>
         </MeetingForm>
       </div>
