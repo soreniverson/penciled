@@ -89,16 +89,10 @@ export default async function BookingsPage() {
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <div className="flex items-center gap-6 min-h-10">
-        <h1 className="text-2xl font-semibold tracking-tight">Upcoming</h1>
-        {pastBookings && pastBookings.length > 0 && (
-          <a href="#past" className="text-2xl font-semibold tracking-tight text-muted-foreground hover:text-foreground transition-colors">
-            Past
-          </a>
-        )}
-      </div>
+      <PageHeader title="Bookings" />
 
       {/* Upcoming Bookings */}
+      <h2 className="text-sm font-medium text-muted-foreground">Upcoming</h2>
       {bookings && bookings.length > 0 ? (
         <div className="space-y-2">
           {bookings.map((booking) => (
@@ -178,8 +172,8 @@ export default async function BookingsPage() {
 
       {/* Past Bookings */}
       {pastBookings && pastBookings.length > 0 && (
-        <div id="past" className="space-y-2 pt-4">
-          <h2 className="text-lg font-medium text-muted-foreground mb-3">Past</h2>
+        <div id="past" className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">Past</h2>
           {pastBookings.map((booking) => (
             <Card key={booking.id} className="opacity-60">
               <CardContent className="p-3">
