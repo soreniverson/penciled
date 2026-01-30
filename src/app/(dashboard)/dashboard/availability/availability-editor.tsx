@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { PageHeader } from '@/components/page-header'
 import { Loader2, Check, Plus, X, Trash2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { InsertAvailability, BlackoutDate, InsertBlackoutDate } from '@/types/database'
@@ -234,13 +235,12 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Availability</h1>
+      <PageHeader title="Availability">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {saving && <Loader2 className="size-4 animate-spin" />}
           {saved && <><Check className="size-4 text-green-500" /> Saved</>}
         </div>
-      </div>
+      </PageHeader>
 
       <Card>
         <CardContent className="py-2 divide-y divide-border">

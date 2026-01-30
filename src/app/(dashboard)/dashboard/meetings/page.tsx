@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/page-header'
 import { formatDuration } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 import { MeetingForm } from './meeting-form'
@@ -25,16 +26,13 @@ export default async function MeetingsPage() {
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
-        </div>
+      <PageHeader title="Meetings">
         <MeetingForm providerId={user.id}>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <Plus className="size-5" />
+          <Button variant="outline" size="icon">
+            <Plus className="size-4" />
           </Button>
         </MeetingForm>
-      </div>
+      </PageHeader>
 
       {meetings && meetings.length > 0 ? (
         <div className="space-y-3">

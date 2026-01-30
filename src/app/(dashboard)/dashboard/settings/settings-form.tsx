@@ -16,6 +16,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { generateSlug } from '@/lib/utils'
+import { PageHeader } from '@/components/page-header'
 import { Loader2, Check, ExternalLink, LogOut, Upload, X, ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { Provider } from '@/types/database'
@@ -170,10 +171,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        </div>
+      <PageHeader title="Settings">
         <Button onClick={handleSave} disabled={saving || !slugAvailable}>
           {saving ? (
             <Loader2 className="size-4 mr-2 animate-spin" />
@@ -182,7 +180,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
           ) : null}
           {saved ? 'Saved!' : 'Save Changes'}
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Profile */}
       <Card>

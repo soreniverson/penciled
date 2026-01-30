@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/page-header'
 import { Plus, Copy, Check, ExternalLink, Users } from 'lucide-react'
 import Link from 'next/link'
 import type { BookingLink } from '@/types/database'
@@ -28,14 +29,13 @@ export function LinksList({ links }: Props) {
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
+      <PageHeader title="Team">
         <Link href="/dashboard/links/new">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <Plus className="size-5" />
+          <Button variant="outline" size="icon">
+            <Plus className="size-4" />
           </Button>
         </Link>
-      </div>
+      </PageHeader>
 
       {links.length === 0 ? (
         <Card>

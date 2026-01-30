@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/page-header'
 import { format } from 'date-fns'
 import { Calendar, Mail, Phone, User, Users } from 'lucide-react'
 import { CancelBookingButton } from './cancel-button'
