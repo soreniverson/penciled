@@ -89,7 +89,7 @@ export default async function BookingsPage() {
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 min-h-10">
         <h1 className="text-2xl font-semibold tracking-tight">Upcoming</h1>
         {pastBookings && pastBookings.length > 0 && (
           <a href="#past" className="text-2xl font-semibold tracking-tight text-muted-foreground hover:text-foreground transition-colors">

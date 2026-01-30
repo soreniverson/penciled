@@ -32,7 +32,7 @@ export default async function IntegrationsPage({
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <div>
+      <div className="flex items-center min-h-10">
         <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
       </div>
 
