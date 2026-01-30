@@ -109,14 +109,23 @@ export default function AvailabilityPage() {
 
       setProviderId(user.id)
 
-      // Load availability rules
-      const { data } = await supabase
-        .from('availability')
-        .select('*')
-        .eq('provider_id', user.id)
-        .order('start_time', { ascending: true })
-        .returns<Availability[]>()
+      // Load availability and blackout dates in parallel
+      const [availabilityResult, blackoutsResult] = await Promise.all([
+        supabase
+          .from('availability')
+          .select('*')
+          .eq('provider_id', user.id)
+          .order('start_time', { ascending: true })
+          .returns<Availability[]>(),
+        supabase
+          .from('blackout_dates')
+          .select('*')
+          .eq('provider_id', user.id)
+          .order('start_date', { ascending: true })
+          .returns<BlackoutDate[]>(),
+      ])
 
+      const data = availabilityResult.data
       if (data && data.length > 0) {
         const loaded: Record<number, AvailabilityDay> = {}
 
@@ -141,16 +150,8 @@ export default function AvailabilityPage() {
         setAvailability(loaded)
       }
 
-      // Load blackout dates
-      const { data: blackouts } = await supabase
-        .from('blackout_dates')
-        .select('*')
-        .eq('provider_id', user.id)
-        .order('start_date', { ascending: true })
-        .returns<BlackoutDate[]>()
-
-      if (blackouts) {
-        setBlackoutDates(blackouts)
+      if (blackoutsResult.data) {
+        setBlackoutDates(blackoutsResult.data)
       }
 
       setLoading(false)
