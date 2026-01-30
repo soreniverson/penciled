@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, ExternalLink, Clock, Mail, User } from 'lucide-react'
-import { format, isToday, isTomorrow, isThisWeek } from 'date-fns'
+import { PageHeader } from '@/components/page-header'
+import { Calendar, ExternalLink } from 'lucide-react'
+import { format, isToday, isTomorrow } from 'date-fns'
 import type { Booking, Meeting } from '@/types/database'
 import { CopyButton } from '@/components/copy-button'
 import { CancelBookingButton } from './bookings/cancel-button'
@@ -69,20 +70,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Bookings</h1>
+      <PageHeader title="Bookings">
         {bookingPageUrl && (
           <div className="flex gap-2">
             <CopyButton text={bookingPageUrl} />
             <Link href={`/${provider?.slug}`} target="_blank">
-              <Button variant="outline" size="sm" className="gap-1">
-                Open <ExternalLink className="size-3" />
+              <Button variant="outline" size="icon">
+                <ExternalLink className="size-4" />
               </Button>
             </Link>
           </div>
         )}
-      </div>
+      </PageHeader>
 
       {/* Upcoming Bookings */}
       <div className="space-y-3">

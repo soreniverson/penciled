@@ -18,17 +18,11 @@ export function CopyButton({ text }: Props) {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleCopy}>
+    <Button variant="outline" size="icon" onClick={handleCopy}>
       {copied ? (
-        <>
-          <Check className="size-4 mr-1" />
-          Copied
-        </>
+        <Check className="size-4" />
       ) : (
-        <>
-          <Copy className="size-4 mr-1" />
-          Copy
-        </>
+        <Copy className="size-4" />
       )}
     </Button>
   )
