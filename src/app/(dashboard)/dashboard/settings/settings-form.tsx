@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,6 +44,7 @@ type Props = {
 export function SettingsForm({ provider: initialProvider }: Props) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const isInitialLoad = useRef(true)
 
   const [name, setName] = useState(initialProvider.name || '')
   const [businessName, setBusinessName] = useState(initialProvider.business_name || '')
@@ -54,6 +55,12 @@ export function SettingsForm({ provider: initialProvider }: Props) {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(true)
   const [checkingSlug, setCheckingSlug] = useState(false)
+
+  // Mark initial load complete after first render
+  useEffect(() => {
+    const timer = setTimeout(() => { isInitialLoad.current = false }, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Check slug availability
   useEffect(() => {
@@ -79,6 +86,48 @@ export function SettingsForm({ provider: initialProvider }: Props) {
     const debounce = setTimeout(checkSlug, 500)
     return () => clearTimeout(debounce)
   }, [slug, initialProvider.slug, initialProvider.id])
+
+  // Auto-save function
+  const saveSettings = useCallback(async () => {
+    if (!slugAvailable) return
+
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('providers')
+        // @ts-ignore - Supabase types not inferring correctly
+        .update({
+          name: name || null,
+          business_name: businessName || null,
+          slug: slug || null,
+          timezone,
+          collect_phone: collectPhone,
+        })
+        .eq('id', initialProvider.id)
+
+      if (!error) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+    } finally {
+      setSaving(false)
+    }
+  }, [name, businessName, slug, timezone, collectPhone, slugAvailable, initialProvider.id])
+
+  // Auto-save on changes (debounced)
+  useEffect(() => {
+    if (isInitialLoad.current) return
+    if (!slugAvailable) return
+
+    const timeout = setTimeout(() => {
+      saveSettings()
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [name, businessName, slug, timezone, collectPhone, saveSettings, slugAvailable])
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -132,54 +181,15 @@ export function SettingsForm({ provider: initialProvider }: Props) {
     }
   }
 
-  const handleSave = async () => {
-    if (!slugAvailable) return
-
-    setSaving(true)
-
-    try {
-      const supabase = createClient()
-
-      const { error } = await supabase
-        .from('providers')
-        // @ts-ignore - Supabase types not inferring correctly
-        .update({
-          name: name || null,
-          business_name: businessName || null,
-          slug: slug || null,
-          timezone,
-          collect_phone: collectPhone,
-        })
-        .eq('id', initialProvider.id)
-
-      if (error) {
-        console.error('Supabase error:', error)
-        alert(`Save failed: ${error.message}`)
-        return
-      }
-
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch (error) {
-      console.error('Save error:', error)
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const bookingUrl = slug ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${slug}` : null
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
       <PageHeader title="Settings">
-        <Button onClick={handleSave} disabled={saving || !slugAvailable}>
-          {saving ? (
-            <Loader2 className="size-4 mr-2 animate-spin" />
-          ) : saved ? (
-            <Check className="size-4 mr-2" />
-          ) : null}
-          {saved ? 'Saved!' : 'Save Changes'}
-        </Button>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {saving && <Loader2 className="size-4 animate-spin" />}
+          {saved && <><Check className="size-4 text-green-500" /> Saved</>}
+        </div>
       </PageHeader>
 
       {/* Profile */}
