@@ -8,10 +8,10 @@ export default function HomePage() {
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="text-center space-y-8 max-w-2xl">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-            Simple scheduling for independent providers
+            Own your calendar
           </h1>
           <p className="text-xl text-muted-foreground">
-            Set your availability, share your link, get booked.
+            Set availability, share links, get booked.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
