@@ -32,14 +32,11 @@ export function CompleteBookingButton({ bookingId }: Props) {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleComplete} disabled={loading}>
+    <Button variant="outline" size="icon" onClick={handleComplete} disabled={loading}>
       {loading ? (
         <Loader2 className="size-4 animate-spin" />
       ) : (
-        <>
-          <Check className="size-4 mr-1" />
-          Complete
-        </>
+        <Check className="size-4" />
       )}
     </Button>
   )

@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 
 type Props = {
   bookingId: string
@@ -53,8 +53,8 @@ export function CancelBookingButton({ bookingId, clientName }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Cancel
+        <Button variant="outline" size="icon">
+          <X className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>

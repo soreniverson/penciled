@@ -54,9 +54,8 @@ export function ApproveBookingButton({ bookingId, clientName }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Check className="size-4 mr-1" />
-          Approve
+        <Button variant="outline" size="icon">
+          <Check className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -119,9 +118,8 @@ export function DeclineBookingButton({ bookingId, clientName }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <X className="size-4 mr-1" />
-          Decline
+        <Button variant="outline" size="icon">
+          <X className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>
