@@ -88,7 +88,7 @@ export default async function BookingsPage() {
     .returns<BookingWithMeeting[]>()
 
   return (
-    <div className="space-y-4 max-w-[780px] mx-auto">
+    <div className="space-y-6 max-w-[780px] mx-auto">
       <div className="flex items-center gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">Upcoming</h1>
         {pastBookings && pastBookings.length > 0 && (

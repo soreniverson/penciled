@@ -184,7 +184,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
   const bookingUrl = slug ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${slug}` : null
 
   return (
-    <div className="space-y-4 max-w-[780px] mx-auto">
+    <div className="space-y-6 max-w-[780px] mx-auto">
       <PageHeader title="Settings">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {saving && <Loader2 className="size-4 animate-spin" />}

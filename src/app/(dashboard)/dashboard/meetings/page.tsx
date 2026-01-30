@@ -25,7 +25,7 @@ export default async function MeetingsPage() {
     .returns<Meeting[]>()
 
   return (
-    <div className="space-y-4 max-w-[780px] mx-auto">
+    <div className="space-y-6 max-w-[780px] mx-auto">
       <PageHeader title="Meetings">
         <MeetingForm providerId={user.id}>
           <Button variant="outline" size="icon">

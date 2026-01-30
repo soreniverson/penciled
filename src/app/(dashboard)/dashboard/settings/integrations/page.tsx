@@ -31,7 +31,7 @@ export default async function IntegrationsPage({
   const isGoogleConnected = !!provider?.google_calendar_token
 
   return (
-    <div className="space-y-4 max-w-[780px] mx-auto">
+    <div className="space-y-6 max-w-[780px] mx-auto">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
       </div>

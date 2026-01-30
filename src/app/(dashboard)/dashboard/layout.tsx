@@ -24,7 +24,7 @@ export default async function DashboardLayout({
       </header>
 
       {/* Main Content */}
-      <main className="p-4 md:p-6 max-w-7xl mx-auto">
+      <main className="px-5 py-6 md:p-6 max-w-7xl mx-auto">
         {children}
       </main>
 

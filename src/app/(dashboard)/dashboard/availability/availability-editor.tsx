@@ -234,7 +234,7 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
   }
 
   return (
-    <div className="space-y-4 max-w-[780px] mx-auto">
+    <div className="space-y-6 max-w-[780px] mx-auto">
       <PageHeader title="Availability">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {saving && <Loader2 className="size-4 animate-spin" />}
