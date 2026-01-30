@@ -75,7 +75,7 @@ export function CancelBookingButton({ bookingId, clientName }: Props) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Keep Booking
+            Keep
           </Button>
           <Button
             variant="destructive"
@@ -83,7 +83,7 @@ export function CancelBookingButton({ bookingId, clientName }: Props) {
             disabled={loading}
           >
             {loading && <Loader2 className="size-4 mr-2 animate-spin" />}
-            Cancel Booking
+            Cancel
           </Button>
         </DialogFooter>
       </DialogContent>

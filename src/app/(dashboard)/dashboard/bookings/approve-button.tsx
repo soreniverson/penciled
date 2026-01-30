@@ -70,11 +70,11 @@ export function ApproveBookingButton({ bookingId, clientName }: Props) {
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            Keep
           </Button>
           <Button onClick={handleApprove} disabled={loading}>
             {loading && <Loader2 className="size-4 mr-2 animate-spin" />}
-            Approve Booking
+            Approve
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -143,7 +143,7 @@ export function DeclineBookingButton({ bookingId, clientName }: Props) {
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            Keep
           </Button>
           <Button
             variant="destructive"
@@ -151,7 +151,7 @@ export function DeclineBookingButton({ bookingId, clientName }: Props) {
             disabled={loading}
           >
             {loading && <Loader2 className="size-4 mr-2 animate-spin" />}
-            Decline Request
+            Decline
           </Button>
         </DialogFooter>
       </DialogContent>

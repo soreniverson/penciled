@@ -53,7 +53,7 @@ export function CancelBookingClient({ bookingId, token, providerName }: Props) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
-          Cancel Booking
+          Cancel
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -74,7 +74,7 @@ export function CancelBookingClient({ bookingId, token, providerName }: Props) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Keep Booking
+            Keep
           </Button>
           <Button
             variant="destructive"
@@ -82,7 +82,7 @@ export function CancelBookingClient({ bookingId, token, providerName }: Props) {
             disabled={loading}
           >
             {loading && <Loader2 className="size-4 mr-2 animate-spin" />}
-            Cancel Booking
+            Cancel
           </Button>
         </DialogFooter>
       </DialogContent>
