@@ -85,7 +85,6 @@ export default async function DashboardPage() {
 
       {/* Upcoming Bookings */}
       <div className="space-y-3">
-        <h2 className="text-lg font-medium">Upcoming</h2>
         {upcomingBookings && upcomingBookings.length > 0 ? (
           <div className="space-y-2">
             {upcomingBookings.map((booking) => {

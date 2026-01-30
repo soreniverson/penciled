@@ -92,7 +92,6 @@ export default async function BookingsPage() {
       <PageHeader title="Bookings" />
 
       {/* Upcoming Bookings */}
-      <h2 className="text-sm font-medium text-muted-foreground">Upcoming</h2>
       {bookings && bookings.length > 0 ? (
         <div className="space-y-2">
           {bookings.map((booking) => (
