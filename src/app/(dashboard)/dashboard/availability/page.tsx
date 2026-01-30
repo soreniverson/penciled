@@ -300,7 +300,7 @@ export default function AvailabilityPage() {
         <CardContent className="py-4 divide-y divide-border">
           {DAYS.map((day) => (
             <div key={day.value} className="py-3 first:pt-0 last:pb-0">
-              <div className="flex items-center gap-4 min-h-10">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-h-10">
                 <div className="flex items-center gap-3 w-28 shrink-0">
                   <Switch
                     checked={availability[day.value].enabled}
@@ -318,7 +318,7 @@ export default function AvailabilityPage() {
                         <div key={windowIndex} className="flex items-center gap-2">
                           <Input
                             type="time"
-                            className="w-[120px]"
+                            className="w-[100px] sm:w-[120px]"
                             value={window.startTime}
                             onChange={(e) =>
                               updateWindow(day.value, windowIndex, { startTime: e.target.value })
@@ -327,7 +327,7 @@ export default function AvailabilityPage() {
                           <span className="text-muted-foreground">–</span>
                           <Input
                             type="time"
-                            className="w-[120px]"
+                            className="w-[100px] sm:w-[120px]"
                             value={window.endTime}
                             onChange={(e) =>
                               updateWindow(day.value, windowIndex, { endTime: e.target.value })

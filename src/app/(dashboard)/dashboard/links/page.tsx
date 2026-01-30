@@ -10,7 +10,7 @@ import type { BookingLink } from '@/types/database'
 
 type BookingLinkWithMembers = BookingLink & {
   booking_link_members: { provider_id: string }[]
-  booking_link_services: { service_id: string }[]
+  booking_link_meetings: { meeting_id: string }[]
 }
 
 export default function LinksPage() {
@@ -34,7 +34,7 @@ export default function LinksPage() {
           .select(`
             *,
             booking_link_members (provider_id),
-            booking_link_services (service_id)
+            booking_link_meetings (meeting_id)
           `)
           .eq('owner_id', user.id)
           .order('created_at', { ascending: false })
@@ -127,7 +127,7 @@ export default function LinksPage() {
                         {link.booking_link_members.length} member{link.booking_link_members.length !== 1 ? 's' : ''}
                       </span>
                       <span>
-                        {link.booking_link_services.length} service{link.booking_link_services.length !== 1 ? 's' : ''}
+                        {link.booking_link_meetings.length} meeting{link.booking_link_meetings.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                   </div>

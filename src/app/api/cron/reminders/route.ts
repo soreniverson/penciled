@@ -17,7 +17,7 @@ type BookingWithReminder = {
   reminder_24h_sent: boolean
   reminder_1h_sent: boolean
   providers: { name: string | null; business_name: string | null; email: string; timezone: string } | null
-  services: { name: string } | null
+  meetings: { name: string } | null
 }
 
 // Create untyped admin client for accessing columns not yet in type definitions
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
         id, management_token, client_name, client_email, start_time, end_time,
         reminder_24h_sent,
         providers:provider_id (name, business_name, email, timezone),
-        services:service_id (name)
+        meetings:meeting_id (name)
       `)
       .eq('status', 'confirmed')
       .eq('reminder_24h_sent', false)
@@ -74,14 +74,14 @@ export async function GET(request: Request) {
     if (bookings24h) {
       for (const booking of bookings24h as unknown as BookingWithReminder[]) {
         const provider = booking.providers
-        const service = booking.services
+        const meeting = booking.meetings
 
-        if (!provider || !service) continue
+        if (!provider || !meeting) continue
 
         const emailData = {
           bookingId: booking.id,
           managementToken: booking.management_token,
-          serviceName: service.name,
+          meetingName: meeting.name,
           providerName: provider.business_name || provider.name || 'Your provider',
           providerEmail: provider.email,
           clientName: booking.client_name,
@@ -118,7 +118,7 @@ export async function GET(request: Request) {
         id, management_token, client_name, client_email, start_time, end_time,
         reminder_1h_sent,
         providers:provider_id (name, business_name, email, timezone),
-        services:service_id (name)
+        meetings:meeting_id (name)
       `)
       .eq('status', 'confirmed')
       .eq('reminder_1h_sent', false)
@@ -128,14 +128,14 @@ export async function GET(request: Request) {
     if (bookings1h) {
       for (const booking of bookings1h as unknown as BookingWithReminder[]) {
         const provider = booking.providers
-        const service = booking.services
+        const meeting = booking.meetings
 
-        if (!provider || !service) continue
+        if (!provider || !meeting) continue
 
         const emailData = {
           bookingId: booking.id,
           managementToken: booking.management_token,
-          serviceName: service.name,
+          meetingName: meeting.name,
           providerName: provider.business_name || provider.name || 'Your provider',
           providerEmail: provider.email,
           clientName: booking.client_name,

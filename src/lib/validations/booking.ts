@@ -6,7 +6,7 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 // Create booking validation schema
 export const createBookingSchema = z.object({
   provider_id: z.string().regex(uuidRegex, 'Invalid provider ID'),
-  service_id: z.string().regex(uuidRegex, 'Invalid service ID'),
+  meeting_id: z.string().regex(uuidRegex, 'Invalid meeting ID'),
   client_name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   client_email: z.string().email('Invalid email format'),
   client_phone: z.string().max(20).optional().nullable(),

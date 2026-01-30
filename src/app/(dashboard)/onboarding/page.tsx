@@ -83,10 +83,9 @@ export default function OnboardingPage() {
   const [businessCategory, setBusinessCategory] = useState('')
   const [timezone, setTimezone] = useState(getTimezoneOffset())
 
-  // Step 2: Service
-  const [serviceName, setServiceName] = useState('')
-  const [serviceDuration, setServiceDuration] = useState('60')
-  const [servicePrice, setServicePrice] = useState('')
+  // Step 2: Meeting
+  const [meetingName, setMeetingName] = useState('')
+  const [meetingDuration, setMeetingDuration] = useState('60')
 
   // Step 3: Availability
   const [availability, setAvailability] = useState<Record<number, AvailabilityDay>>({
@@ -146,8 +145,8 @@ export default function OnboardingPage() {
     }
 
     if (step === 2) {
-      if (!serviceName.trim()) {
-        setError('Please enter a service name')
+      if (!meetingName.trim()) {
+        setError('Please enter a meeting name')
         return
       }
     }
@@ -200,19 +199,17 @@ export default function OnboardingPage() {
 
       if (providerError) throw providerError
 
-      // Create service
-      const priceCents = servicePrice ? Math.round(parseFloat(servicePrice) * 100) : null
-      const { error: serviceError } = await supabase
-        .from('services')
+      // Create meeting
+      const { error: meetingError } = await supabase
+        .from('meetings')
         // @ts-ignore - Supabase types not inferring correctly
         .insert({
           provider_id: user.id,
-          name: serviceName,
-          duration_minutes: parseInt(serviceDuration),
-          price_cents: priceCents,
+          name: meetingName,
+          duration_minutes: parseInt(meetingDuration),
         })
 
-      if (serviceError) throw serviceError
+      if (meetingError) throw meetingError
 
       // Create availability
       const availabilityRecords = Object.entries(availability)
@@ -326,28 +323,28 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 2: Service */}
+        {/* Step 2: Meeting */}
         {step === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle>Create your first service</CardTitle>
+              <CardTitle>Create your first meeting</CardTitle>
               <CardDescription>
-                What do you offer? You can add more services later.
+                What type of meeting do you offer? You can add more later.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="serviceName">Service name *</Label>
+                <Label htmlFor="meetingName">Meeting name *</Label>
                 <Input
-                  id="serviceName"
-                  placeholder="e.g., Piano Lesson"
-                  value={serviceName}
-                  onChange={(e) => setServiceName(e.target.value)}
+                  id="meetingName"
+                  placeholder="e.g., Consultation Call"
+                  value={meetingName}
+                  onChange={(e) => setMeetingName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration</Label>
-                <Select value={serviceDuration} onValueChange={setServiceDuration}>
+                <Select value={meetingDuration} onValueChange={setMeetingDuration}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -359,25 +356,6 @@ export default function OnboardingPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Price (optional)</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
-                  </span>
-                  <Input
-                    id="price"
-                    type="number"
-                    placeholder="0.00"
-                    className="pl-7"
-                    value={servicePrice}
-                    onChange={(e) => setServicePrice(e.target.value)}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Leave empty if you don&apos;t want to display a price
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -396,20 +374,22 @@ export default function OnboardingPage() {
               {DAYS.map((day) => (
                 <div
                   key={day.value}
-                  className="flex items-center gap-4 p-3 rounded-lg border"
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-lg border"
                 >
-                  <Switch
-                    checked={availability[day.value].enabled}
-                    onCheckedChange={(checked) =>
-                      updateAvailability(day.value, { enabled: checked })
-                    }
-                  />
-                  <span className="w-20 text-sm font-medium">{day.label}</span>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={availability[day.value].enabled}
+                      onCheckedChange={(checked) =>
+                        updateAvailability(day.value, { enabled: checked })
+                      }
+                    />
+                    <span className="w-20 text-sm font-medium">{day.label}</span>
+                  </div>
                   {availability[day.value].enabled && (
-                    <div className="flex items-center gap-2 ml-auto">
+                    <div className="flex items-center gap-2 sm:ml-auto">
                       <Input
                         type="time"
-                        className="w-28"
+                        className="w-24 sm:w-28"
                         value={availability[day.value].startTime}
                         onChange={(e) =>
                           updateAvailability(day.value, { startTime: e.target.value })
@@ -418,7 +398,7 @@ export default function OnboardingPage() {
                       <span className="text-muted-foreground">to</span>
                       <Input
                         type="time"
-                        className="w-28"
+                        className="w-24 sm:w-28"
                         value={availability[day.value].endTime}
                         onChange={(e) =>
                           updateAvailability(day.value, { endTime: e.target.value })
@@ -470,8 +450,7 @@ export default function OnboardingPage() {
                 <p className="text-sm font-medium mb-2">Preview</p>
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p><strong>Business:</strong> {businessName}</p>
-                  <p><strong>Service:</strong> {serviceName} ({serviceDuration} min)</p>
-                  <p><strong>Price:</strong> {servicePrice ? `$${servicePrice}` : 'Not displayed'}</p>
+                  <p><strong>Meeting:</strong> {meetingName} ({meetingDuration} min)</p>
                 </div>
               </div>
             </CardContent>

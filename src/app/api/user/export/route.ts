@@ -33,9 +33,9 @@ export async function GET() {
     }
 
     // Fetch all related data
-    const [servicesResult, availabilityResult, bookingsResult] = await Promise.all([
+    const [meetingsResult, availabilityResult, bookingsResult] = await Promise.all([
       supabase
-        .from('services')
+        .from('meetings')
         .select('*')
         .eq('provider_id', provider.id) as unknown as Promise<{ data: Record<string, unknown>[] | null }>,
       supabase
@@ -69,7 +69,7 @@ export async function GET() {
         updated_at: provider.updated_at,
         // Note: google_calendar_tokens are excluded for security
       },
-      services: servicesResult.data || [],
+      meetings: meetingsResult.data || [],
       availability: availabilityResult.data || [],
       bookings: (bookingsResult.data || []).map(booking => ({
         ...booking,

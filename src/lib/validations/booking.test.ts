@@ -11,7 +11,7 @@ describe('booking validations', () => {
   describe('createBookingSchema', () => {
     const validBooking = {
       provider_id: '123e4567-e89b-12d3-a456-426614174000',
-      service_id: '123e4567-e89b-12d3-a456-426614174001',
+      meeting_id: '123e4567-e89b-12d3-a456-426614174001',
       client_name: 'John Doe',
       client_email: 'john@example.com',
       client_phone: '+1234567890',
@@ -47,14 +47,14 @@ describe('booking validations', () => {
       }
     })
 
-    it('rejects invalid UUID for service_id', () => {
+    it('rejects invalid UUID for meeting_id', () => {
       const result = createBookingSchema.safeParse({
         ...validBooking,
-        service_id: 'not-a-uuid',
+        meeting_id: 'not-a-uuid',
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('service_id')
+        expect(result.error.issues[0].path).toContain('meeting_id')
       }
     })
 

@@ -37,7 +37,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         id, management_token, provider_id, booking_link_id, status,
         client_name, client_email, client_phone, start_time, end_time, notes,
         providers:provider_id (id, name, business_name, email, timezone, google_calendar_token),
-        services:service_id (name),
+        meetings:meeting_id (name),
         booking_links:booking_link_id (name)
       `)
       .eq('id', id)
@@ -54,7 +54,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         end_time: string
         notes: string | null
         providers: { id: string; name: string | null; business_name: string | null; email: string; timezone: string; google_calendar_token: unknown } | null
-        services: { name: string } | null
+        meetings: { name: string } | null
         booking_links: { name: string } | null
       } | null }
 
@@ -98,7 +98,7 @@ export async function POST(request: Request, { params }: RouteContext) {
     }
 
     // Determine display name and get team members
-    const service = booking.services
+    const meeting = booking.meetings
     const provider = booking.providers
     let displayName = booking.booking_links?.name || provider?.business_name || provider?.name || 'Your provider'
 
@@ -147,13 +147,13 @@ export async function POST(request: Request, { params }: RouteContext) {
       }]
     }
 
-    if (service && teamMembers.length > 0) {
+    if (meeting && teamMembers.length > 0) {
       const primaryMember = teamMembers[0]
 
       const baseEmailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
-        serviceName: service.name,
+        meetingName: meeting.name,
         providerName: displayName,
         clientName: booking.client_name,
         clientEmail: booking.client_email,
@@ -181,7 +181,7 @@ export async function POST(request: Request, { params }: RouteContext) {
                 end_time: booking.end_time,
                 notes: booking.notes,
               },
-              service.name
+              meeting.name
             ).catch(err => console.error(`Calendar event creation failed for ${member.email}:`, err))
           }
         })

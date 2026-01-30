@@ -72,7 +72,7 @@ describe('POST /api/bookings', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider_id: '123e4567-e89b-12d3-a456-426614174000',
-          service_id: '123e4567-e89b-12d3-a456-426614174001',
+          meeting_id: '123e4567-e89b-12d3-a456-426614174001',
           client_name: 'Test Client',
           client_email: 'invalid-email',
           start_time: '2024-01-15T10:00:00Z',
@@ -93,7 +93,7 @@ describe('POST /api/bookings', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider_id: 'not-a-uuid',
-          service_id: '123e4567-e89b-12d3-a456-426614174001',
+          meeting_id: '123e4567-e89b-12d3-a456-426614174001',
           client_name: 'Test Client',
           client_email: 'test@example.com',
           start_time: '2024-01-15T10:00:00Z',
@@ -111,7 +111,7 @@ describe('POST /api/bookings', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider_id: '123e4567-e89b-12d3-a456-426614174000',
-          service_id: '123e4567-e89b-12d3-a456-426614174001',
+          meeting_id: '123e4567-e89b-12d3-a456-426614174001',
           client_name: 'Test Client',
           client_email: 'test@example.com',
           start_time: '2024-01-15T11:00:00Z',
@@ -127,7 +127,7 @@ describe('POST /api/bookings', () => {
       // Test that the schema validates datetime format
       const invalidDateData = {
         provider_id: '123e4567-e89b-12d3-a456-426614174000',
-        service_id: '123e4567-e89b-12d3-a456-426614174001',
+        meeting_id: '123e4567-e89b-12d3-a456-426614174001',
         client_name: 'Test Client',
         client_email: 'test@example.com',
         start_time: 'not-a-date',
@@ -144,7 +144,7 @@ describe('POST /api/bookings', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider_id: '123e4567-e89b-12d3-a456-426614174000',
-          service_id: '123e4567-e89b-12d3-a456-426614174001',
+          meeting_id: '123e4567-e89b-12d3-a456-426614174001',
           client_name: '',
           client_email: 'test@example.com',
           start_time: '2025-01-15T10:00:00Z',
@@ -162,7 +162,7 @@ describe('POST /api/bookings', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider_id: '123e4567-e89b-12d3-a456-426614174000',
-          service_id: '123e4567-e89b-12d3-a456-426614174001',
+          meeting_id: '123e4567-e89b-12d3-a456-426614174001',
           client_name: 'a'.repeat(101),
           client_email: 'test@example.com',
           start_time: '2025-01-15T10:00:00Z',
@@ -179,7 +179,7 @@ describe('POST /api/bookings', () => {
     it('should validate a correct booking request', () => {
       const validData = {
         provider_id: '123e4567-e89b-12d3-a456-426614174000',
-        service_id: '123e4567-e89b-12d3-a456-426614174001',
+        meeting_id: '123e4567-e89b-12d3-a456-426614174001',
         client_name: 'Test Client',
         client_email: 'test@example.com',
         start_time: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
@@ -193,7 +193,7 @@ describe('POST /api/bookings', () => {
     it('should allow optional fields', () => {
       const validData = {
         provider_id: '123e4567-e89b-12d3-a456-426614174000',
-        service_id: '123e4567-e89b-12d3-a456-426614174001',
+        meeting_id: '123e4567-e89b-12d3-a456-426614174001',
         client_name: 'Test Client',
         client_email: 'test@example.com',
         client_phone: '+1234567890',

@@ -22,8 +22,8 @@ export function getAuthUrl(state: string) {
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: [
-      'https://www.googleapis.com/auth/calendar.events',
-      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/calendar.events.owned',
+      'https://www.googleapis.com/auth/calendar.events.freebusy',
     ],
     prompt: 'consent',
     state,
@@ -122,7 +122,7 @@ export async function createCalendarEvent(
     end_time: string
     notes?: string | null
   },
-  serviceName: string
+  meetingName: string
 ): Promise<string | null> {
   const oauth2Client = await getAuthorizedClient(providerId)
   if (!oauth2Client) return null
@@ -155,7 +155,7 @@ export async function createCalendarEvent(
     const response = await calendar.events.insert({
       calendarId,
       requestBody: {
-        summary: `${serviceName} with ${booking.client_name}`,
+        summary: `${meetingName} with ${booking.client_name}`,
         description,
         start: {
           dateTime: booking.start_time,

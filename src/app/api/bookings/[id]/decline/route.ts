@@ -35,14 +35,14 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get booking with provider and service info
+    // Get booking with provider and meeting info
     const { data: booking } = await supabase
       .from('bookings')
       .select(`
         id, management_token, provider_id, status,
         client_name, client_email, start_time, end_time,
         providers:provider_id (name, business_name, email, timezone),
-        services:service_id (name)
+        meetings:meeting_id (name)
       `)
       .eq('id', id)
       .eq('provider_id', user.id)
@@ -56,7 +56,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         start_time: string
         end_time: string
         providers: { name: string | null; business_name: string | null; email: string; timezone: string } | null
-        services: { name: string } | null
+        meetings: { name: string } | null
       } | null }
 
     if (!booking) {
@@ -86,13 +86,13 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     // Send decline email to client
     const provider = booking.providers
-    const service = booking.services
+    const meeting = booking.meetings
 
-    if (provider && service) {
+    if (provider && meeting) {
       const emailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
-        serviceName: service.name,
+        meetingName: meeting.name,
         providerName: provider.business_name || provider.name || 'Your provider',
         providerEmail: provider.email,
         clientName: booking.client_name,

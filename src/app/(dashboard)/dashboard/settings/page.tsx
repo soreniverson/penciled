@@ -205,7 +205,7 @@ export default function SettingsPage() {
     )
   }
 
-  const bookingUrl = slug ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${slug}` : null
+  const bookingUrl = slug ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${slug}` : null
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
@@ -351,7 +351,7 @@ export default function SettingsPage() {
             <Label htmlFor="slug">URL</Label>
             <div className="flex items-center gap-0">
               <span className="px-3 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
-                penciled.fyi/book/
+                penciled.fyi/
               </span>
               <Input
                 id="slug"
@@ -375,7 +375,7 @@ export default function SettingsPage() {
               <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm break-all">
                 {bookingUrl}
               </code>
-              <Link href={`/book/${slug}`} target="_blank">
+              <Link href={`/${slug}`} target="_blank">
                 <Button variant="outline" size="sm" className="gap-1">
                   Open <ExternalLink className="size-3" />
                 </Button>

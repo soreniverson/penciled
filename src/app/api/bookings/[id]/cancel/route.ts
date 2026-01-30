@@ -30,14 +30,14 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     const supabase = createAdminClient()
 
-    // Verify token and get booking with provider and service info
+    // Verify token and get booking with provider and meeting info
     const { data: booking } = await supabase
       .from('bookings')
       .select(`
         id, management_token, google_event_id, provider_id,
         client_name, client_email, start_time, end_time,
         providers:provider_id (name, business_name, email, timezone),
-        services:service_id (name)
+        meetings:meeting_id (name)
       `)
       .eq('id', id)
       .single() as { data: {
@@ -50,7 +50,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         start_time: string
         end_time: string
         providers: { name: string | null; business_name: string | null; email: string; timezone: string } | null
-        services: { name: string } | null
+        meetings: { name: string } | null
       } | null }
 
     if (!booking || booking.management_token !== token) {
@@ -76,13 +76,13 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     // Send cancellation emails
     const provider = booking.providers
-    const service = booking.services
+    const meeting = booking.meetings
 
-    if (provider && service) {
+    if (provider && meeting) {
       const emailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
-        serviceName: service.name,
+        meetingName: meeting.name,
         providerName: provider.business_name || provider.name || 'Your provider',
         providerEmail: provider.email,
         clientName: booking.client_name,

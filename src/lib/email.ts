@@ -9,7 +9,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 type BookingEmailData = {
   bookingId: string
   managementToken: string
-  serviceName: string
+  meetingName: string
   providerName: string
   providerEmail: string
   clientName: string
@@ -21,7 +21,7 @@ type BookingEmailData = {
 }
 
 export async function sendBookingConfirmationToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, serviceName, providerName, startTime, endTime, managementToken } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -47,7 +47,7 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
           <p style="margin-bottom: 24px;">Your appointment has been confirmed.</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
@@ -75,17 +75,18 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingNotificationToProvider(data: BookingEmailData) {
-  const { providerEmail, providerName, clientName, clientEmail, serviceName, startTime, endTime, notes } = data
+  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, notes, managementToken } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
+  const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `New booking: ${serviceName} with ${clientName}`,
+      subject: `New booking: ${meetingName} with ${clientName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -101,7 +102,7 @@ export async function sendBookingNotificationToProvider(data: BookingEmailData) 
           <p style="margin-bottom: 24px;">You have a new booking!</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
@@ -113,8 +114,12 @@ export async function sendBookingNotificationToProvider(data: BookingEmailData) 
             <p style="margin: 8px 0 0 0; font-size: 14px;">${notes}</p>
           </div>
           ` : ''}
-          <p style="margin-bottom: 24px;">
+          <p style="margin-bottom: 16px;">
             <a href="${dashboardUrl}" style="display: inline-block; background: #1a1a1a; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">View in Dashboard</a>
+          </p>
+
+          <p style="margin-bottom: 24px;">
+            Need to make changes? <a href="${manageUrl}" style="color: #1a1a1a;">Reschedule or cancel this booking</a>
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;">
@@ -134,7 +139,7 @@ export async function sendBookingNotificationToProvider(data: BookingEmailData) 
 }
 
 export async function sendCancellationEmailToClient(data: BookingEmailData & { reason?: string }) {
-  const { clientEmail, clientName, serviceName, providerName, startTime, endTime, reason } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, reason } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -159,7 +164,7 @@ export async function sendCancellationEmailToClient(data: BookingEmailData & { r
           <p style="margin-bottom: 24px;">Your appointment has been cancelled.</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
@@ -188,7 +193,7 @@ export async function sendCancellationEmailToClient(data: BookingEmailData & { r
 
 // Booking request emails (for request mode)
 export async function sendBookingRequestToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, serviceName, providerName, startTime, endTime, managementToken } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -215,7 +220,7 @@ export async function sendBookingRequestToClient(data: BookingEmailData) {
 
           <div style="background: #fef3c7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
             <p style="margin: 0 0 12px 0;"><strong>Status:</strong> Pending confirmation</p>
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
@@ -242,17 +247,18 @@ export async function sendBookingRequestToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingRequestToProvider(data: BookingEmailData) {
-  const { providerEmail, providerName, clientName, clientEmail, serviceName, startTime, endTime, notes } = data
+  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, notes, managementToken } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
+  const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Booking request: ${serviceName} with ${clientName}`,
+      subject: `Booking request: ${meetingName} with ${clientName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -268,7 +274,7 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
           <p style="margin-bottom: 24px;">You have a new booking request that needs your approval.</p>
 
           <div style="background: #fef3c7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
@@ -280,8 +286,12 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
             <p style="margin: 8px 0 0 0; font-size: 14px;">${notes}</p>
           </div>
           ` : ''}
-          <p style="margin-bottom: 24px;">
+          <p style="margin-bottom: 16px;">
             <a href="${dashboardUrl}" style="display: inline-block; background: #1a1a1a; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">Review Request</a>
+          </p>
+
+          <p style="margin-bottom: 24px;">
+            Or <a href="${manageUrl}" style="color: #1a1a1a;">view booking details</a>
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;">
@@ -301,7 +311,7 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
 }
 
 export async function sendBookingApprovalToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, serviceName, providerName, startTime, endTime, managementToken } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -327,7 +337,7 @@ export async function sendBookingApprovalToClient(data: BookingEmailData) {
           <p style="margin-bottom: 24px;">Great news! Your booking request has been approved.</p>
 
           <div style="background: #dcfce7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
@@ -355,7 +365,7 @@ export async function sendBookingApprovalToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingDeclinedToClient(data: BookingEmailData & { reason?: string }) {
-  const { clientEmail, clientName, serviceName, providerName, startTime, endTime, reason } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, reason } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -380,7 +390,7 @@ export async function sendBookingDeclinedToClient(data: BookingEmailData & { rea
           <p style="margin-bottom: 24px;">Unfortunately, your booking request could not be confirmed at this time.</p>
 
           <div style="background: #fef2f2; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
@@ -408,7 +418,7 @@ export async function sendBookingDeclinedToClient(data: BookingEmailData & { rea
 }
 
 export async function sendCancellationEmailToProvider(data: BookingEmailData & { reason?: string }) {
-  const { providerEmail, providerName, clientName, serviceName, startTime, endTime, reason } = data
+  const { providerEmail, providerName, clientName, meetingName, startTime, endTime, reason } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -417,7 +427,7 @@ export async function sendCancellationEmailToProvider(data: BookingEmailData & {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Booking cancelled: ${serviceName} with ${clientName}`,
+      subject: `Booking cancelled: ${meetingName} with ${clientName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -433,7 +443,7 @@ export async function sendCancellationEmailToProvider(data: BookingEmailData & {
           <p style="margin-bottom: 24px;">A booking has been cancelled.</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Client:</strong> ${clientName}</p>
@@ -458,7 +468,7 @@ export async function sendCancellationEmailToProvider(data: BookingEmailData & {
 
 // Reminder emails
 export async function sendReminderEmailToClient(data: BookingEmailData & { hoursUntil: number }) {
-  const { clientEmail, clientName, serviceName, providerName, startTime, endTime, managementToken, hoursUntil } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, hoursUntil } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
@@ -486,7 +496,7 @@ export async function sendReminderEmailToClient(data: BookingEmailData & { hours
           <p style="margin-bottom: 24px;">This is a friendly reminder about your upcoming appointment ${timeLabel}.</p>
 
           <div style="background: #e0f2fe; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
@@ -514,11 +524,12 @@ export async function sendReminderEmailToClient(data: BookingEmailData & { hours
 }
 
 export async function sendReminderEmailToProvider(data: BookingEmailData & { hoursUntil: number }) {
-  const { providerEmail, providerName, clientName, clientEmail, serviceName, startTime, endTime, hoursUntil } = data
+  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, hoursUntil, managementToken } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
+  const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   const timeLabel = hoursUntil === 24 ? 'tomorrow' : 'in 1 hour'
 
@@ -526,7 +537,7 @@ export async function sendReminderEmailToProvider(data: BookingEmailData & { hou
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Reminder: ${serviceName} with ${clientName} ${timeLabel}`,
+      subject: `Reminder: ${meetingName} with ${clientName} ${timeLabel}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -542,15 +553,19 @@ export async function sendReminderEmailToProvider(data: BookingEmailData & { hou
           <p style="margin-bottom: 24px;">You have an appointment ${timeLabel}.</p>
 
           <div style="background: #e0f2fe; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Service:</strong> ${serviceName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
             <p style="margin: 0;"><strong>Email:</strong> ${clientEmail}</p>
           </div>
 
-          <p style="margin-bottom: 24px;">
+          <p style="margin-bottom: 16px;">
             <a href="${dashboardUrl}" style="display: inline-block; background: #1a1a1a; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">View in Dashboard</a>
+          </p>
+
+          <p style="margin-bottom: 24px;">
+            Need to make changes? <a href="${manageUrl}" style="color: #1a1a1a;">Reschedule or cancel this booking</a>
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;">

@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     const {
       provider_id,
-      service_id,
+      meeting_id,
       client_name,
       client_email,
       client_phone,
@@ -35,14 +35,14 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Fetch service to get booking mode
-    const { data: serviceData } = await supabase
-      .from('services')
+    // Fetch meeting to get booking mode
+    const { data: meetingData } = await supabase
+      .from('meetings')
       .select('booking_mode, name')
-      .eq('id', service_id)
+      .eq('id', meeting_id)
       .single() as { data: { booking_mode: string | null; name: string } | null }
 
-    const bookingMode = serviceData?.booking_mode || 'instant'
+    const bookingMode = meetingData?.booking_mode || 'instant'
 
     // Check for conflicts
     const { data: conflicts } = await supabase
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     // Create booking with status based on booking mode
     const bookingData = {
       provider_id,
-      service_id,
+      meeting_id,
       client_name,
       client_email,
       client_phone: client_phone || null,
@@ -101,14 +101,14 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Booking creation error:', error)
-      await logApiError(error, '/api/bookings', 'create', { provider_id, service_id })
+      await logApiError(error, '/api/bookings', 'create', { provider_id, meeting_id })
       return NextResponse.json(
         { error: 'Failed to create booking' },
         { status: 500 }
       )
     }
 
-    const serviceName = serviceData?.name || 'Appointment'
+    const meetingName = meetingData?.name || 'Appointment'
 
     // Determine team members to notify
     type TeamMember = {
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
       const baseEmailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
-        serviceName,
+        meetingName,
         providerName: displayName,
         clientName: client_name,
         clientEmail: client_email,
@@ -231,7 +231,7 @@ export async function POST(request: Request) {
                   end_time,
                   notes,
                 },
-                serviceName
+                meetingName
               )
             }
           })

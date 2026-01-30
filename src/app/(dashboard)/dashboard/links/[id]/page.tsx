@@ -11,13 +11,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { Loader2, ArrowLeft, Users, Briefcase, Trash2, Copy, Check, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
-import type { Service, Provider, BookingLink, BookingLinkMember, BookingLinkService } from '@/types/database'
+import type { Meeting, Provider, BookingLink, BookingLinkMember, BookingLinkMeeting } from '@/types/database'
 
 type MemberWithProvider = BookingLinkMember & { providers: Provider }
-type ServiceWithData = BookingLinkService & { services: Service }
+type MeetingWithData = BookingLinkMeeting & { meetings: Meeting }
 type BookingLinkWithRelations = BookingLink & {
   booking_link_members: MemberWithProvider[]
-  booking_link_services: ServiceWithData[]
+  booking_link_meetings: MeetingWithData[]
 }
 
 export default function EditLinkPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,13 +31,13 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
 
   const [bookingLink, setBookingLink] = useState<BookingLinkWithRelations | null>(null)
   const [currentUser, setCurrentUser] = useState<Provider | null>(null)
-  const [allServices, setAllServices] = useState<Service[]>([])
+  const [allMeetings, setAllMeetings] = useState<Meeting[]>([])
 
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
-  const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [selectedMeetings, setSelectedMeetings] = useState<string[]>([])
   const [memberEmail, setMemberEmail] = useState('')
   const [members, setMembers] = useState<{ id: string; memberId?: string; email: string; name: string | null; isRequired: boolean }[]>([])
   const [addingMember, setAddingMember] = useState(false)
@@ -75,10 +75,10 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
             is_required,
             providers:provider_id (*)
           ),
-          booking_link_services (
+          booking_link_meetings (
             id,
-            service_id,
-            services:service_id (*)
+            meeting_id,
+            services:meeting_id (*)
           )
         `)
         .eq('id', resolvedParams.id)
@@ -107,20 +107,20 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
       }))
       setMembers(memberList)
 
-      // Set up selected services
-      const serviceIds = (typedLink.booking_link_services as ServiceWithData[]).map(s => s.service_id)
-      setSelectedServices(serviceIds)
+      // Set up selected meetings
+      const meetingIds = (typedLink.booking_link_meetings as MeetingWithData[]).map(s => s.meeting_id)
+      setSelectedMeetings(meetingIds)
 
-      // Load all available services
-      const { data: servicesData } = await supabase
-        .from('services')
+      // Load all available meetings
+      const { data: meetingsData } = await supabase
+        .from('meetings')
         .select('*')
         .eq('provider_id', user.id)
         .eq('is_active', true)
         .order('name')
 
-      if (servicesData) {
-        setAllServices(servicesData as Service[])
+      if (meetingsData) {
+        setAllMeetings(meetingsData as Meeting[])
       }
 
       setLoading(false)
@@ -232,33 +232,33 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
     }
   }
 
-  const toggleService = async (serviceId: string) => {
+  const toggleMeeting = async (meetingId: string) => {
     const supabase = createUntypedClient()
-    const isSelected = selectedServices.includes(serviceId)
+    const isSelected = selectedMeetings.includes(meetingId)
 
     try {
       if (isSelected) {
-        // Remove service
+        // Remove meeting
         await supabase
-          .from('booking_link_services')
+          .from('booking_link_meetings')
           .delete()
           .eq('booking_link_id', resolvedParams.id)
-          .eq('service_id', serviceId)
+          .eq('meeting_id', meetingId)
 
-        setSelectedServices(prev => prev.filter(id => id !== serviceId))
+        setSelectedMeetings((prev: string[]) => prev.filter((id: string) => id !== meetingId))
       } else {
-        // Add service
+        // Add meeting
         await supabase
-          .from('booking_link_services')
+          .from('booking_link_meetings')
           .insert({
             booking_link_id: resolvedParams.id,
-            service_id: serviceId,
+            meeting_id: meetingId,
           } as any)
 
-        setSelectedServices(prev => [...prev, serviceId])
+        setSelectedMeetings((prev: string[]) => [...prev, meetingId])
       }
     } catch (err) {
-      console.error('Failed to toggle service:', err)
+      console.error('Failed to toggle meeting:', err)
     }
   }
 
@@ -498,37 +498,37 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
           </CardContent>
         </Card>
 
-        {/* Services */}
+        {/* Meetings */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Briefcase className="size-5" />
-              Services
+              Meetings
             </CardTitle>
             <CardDescription>
-              Select which services are available on this booking link.
+              Select which meetings are available on this booking link.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {allServices.length === 0 ? (
+            {allMeetings.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                No services found. <Link href="/dashboard/services" className="underline">Create a service</Link> first.
+                No meetings found. <Link href="/dashboard/meetings" className="underline">Create a meeting</Link> first.
               </p>
             ) : (
               <div className="space-y-2">
-                {allServices.map((service) => (
+                {allMeetings.map((meeting) => (
                   <label
-                    key={service.id}
+                    key={meeting.id}
                     className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary cursor-pointer"
                   >
                     <Checkbox
-                      checked={selectedServices.includes(service.id)}
-                      onCheckedChange={() => toggleService(service.id)}
+                      checked={selectedMeetings.includes(meeting.id)}
+                      onCheckedChange={() => toggleMeeting(meeting.id)}
                     />
                     <div className="flex-1">
-                      <p className="font-medium text-sm">{service.name}</p>
+                      <p className="font-medium text-sm">{meeting.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {service.duration_minutes} min
+                        {meeting.duration_minutes} min
                       </p>
                     </div>
                   </label>

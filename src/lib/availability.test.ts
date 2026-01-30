@@ -164,9 +164,9 @@ describe('availability', () => {
   describe('getBookingsForDateRange', () => {
     it('filters bookings within date range', () => {
       const bookings = [
-        { start_time: '2025-01-20T10:00:00Z', end_time: '2025-01-20T11:00:00Z', status: 'confirmed' },
-        { start_time: '2025-01-21T10:00:00Z', end_time: '2025-01-21T11:00:00Z', status: 'confirmed' },
-        { start_time: '2025-01-25T10:00:00Z', end_time: '2025-01-25T11:00:00Z', status: 'confirmed' },
+        { start_time: '2025-01-20T10:00:00Z', end_time: '2025-01-20T11:00:00Z', status: 'confirmed' as const },
+        { start_time: '2025-01-21T10:00:00Z', end_time: '2025-01-21T11:00:00Z', status: 'confirmed' as const },
+        { start_time: '2025-01-25T10:00:00Z', end_time: '2025-01-25T11:00:00Z', status: 'confirmed' as const },
       ]
 
       const startDate = new Date('2025-01-19T00:00:00Z')
@@ -179,8 +179,8 @@ describe('availability', () => {
 
     it('excludes cancelled bookings', () => {
       const bookings = [
-        { start_time: '2025-01-20T10:00:00Z', end_time: '2025-01-20T11:00:00Z', status: 'confirmed' },
-        { start_time: '2025-01-21T10:00:00Z', end_time: '2025-01-21T11:00:00Z', status: 'cancelled' },
+        { start_time: '2025-01-20T10:00:00Z', end_time: '2025-01-20T11:00:00Z', status: 'confirmed' as const },
+        { start_time: '2025-01-21T10:00:00Z', end_time: '2025-01-21T11:00:00Z', status: 'cancelled' as const },
       ]
 
       const startDate = new Date('2025-01-19T00:00:00Z')

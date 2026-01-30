@@ -1,115 +1,83 @@
-import { createUntypedAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-import { getCalendarBusyTimes } from '@/lib/google-calendar'
 import { generateTimeSlots } from '@/lib/availability'
 import { startOfDay, endOfDay } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
-import type { Availability, Service, Booking } from '@/types/database'
+import type { Meeting, Booking } from '@/types/database'
+
+// Import from the new cached data layer
+import {
+  getProviderTimezone,
+  getProviderCalendarToken,
+  getProviderAvailability,
+  getMeetingConfig,
+  getBookingsInRange,
+  isDateBlackedOut,
+  getCachedBusyTimes,
+} from '@/lib/data'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const providerId = searchParams.get('provider_id')
-    const serviceId = searchParams.get('service_id')
+    const meetingId = searchParams.get('meeting_id')
     const dateStr = searchParams.get('date')
-    const excludeBookingId = searchParams.get('exclude_booking_id')
+    const excludeBookingId = searchParams.get('exclude_booking_id') || undefined
 
-    if (!providerId || !serviceId || !dateStr) {
+    if (!providerId || !meetingId || !dateStr) {
       return NextResponse.json(
-        { error: 'Missing required parameters: provider_id, service_id, date' },
+        { error: 'Missing required parameters: provider_id, meeting_id, date' },
         { status: 400 }
       )
     }
 
-    const supabase = createUntypedAdminClient()
-
-    // Parse date and get day boundaries in provider's timezone
     const requestedDate = new Date(dateStr)
 
-    // Fetch provider info (timezone and calendar connection)
-    const { data: provider } = await supabase
-      .from('providers')
-      .select('timezone, google_calendar_token')
-      .eq('id', providerId)
-      .single()
+    // OPTIMIZATION: Fetch timezone, availability rules, and meeting config in parallel
+    // These are all cached, so subsequent requests are instant
+    const [timezone, availabilityRules, meeting] = await Promise.all([
+      getProviderTimezone(providerId),
+      getProviderAvailability(providerId),
+      getMeetingConfig(meetingId),
+    ])
 
-    if (!provider) {
-      return NextResponse.json({ error: 'Provider not found' }, { status: 404 })
+    if (!meeting) {
+      return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
     }
-
-    const timezone = provider.timezone || 'America/New_York'
-    const zonedDate = toZonedTime(requestedDate, timezone)
-    const dayStart = startOfDay(zonedDate)
-    const dayEnd = endOfDay(zonedDate)
-
-    // Fetch provider's availability rules
-    const { data: availabilityRules } = await supabase
-      .from('availability')
-      .select('day_of_week, start_time, end_time')
-      .eq('provider_id', providerId)
-      .eq('is_active', true)
 
     if (!availabilityRules || availabilityRules.length === 0) {
       return NextResponse.json({ slots: [] })
     }
 
-    // Fetch service details
-    const { data: service } = await supabase
-      .from('services')
-      .select('duration_minutes, buffer_minutes')
-      .eq('id', serviceId)
-      .single()
+    // Calculate day boundaries in provider's timezone
+    const zonedDate = toZonedTime(requestedDate, timezone)
+    const dayStart = startOfDay(zonedDate)
+    const dayEnd = endOfDay(zonedDate)
 
-    if (!service) {
-      return NextResponse.json({ error: 'Service not found' }, { status: 404 })
-    }
-
-    // Fetch existing Supabase bookings for the day
-    let bookingsQuery = supabase
-      .from('bookings')
-      .select('start_time, end_time, status')
-      .eq('provider_id', providerId)
-      .neq('status', 'cancelled')
-      .gte('start_time', dayStart.toISOString())
-      .lte('start_time', dayEnd.toISOString())
-
-    // Exclude a specific booking (for reschedule flow)
-    if (excludeBookingId) {
-      bookingsQuery = bookingsQuery.neq('id', excludeBookingId)
-    }
-
-    const { data: bookings } = await bookingsQuery
-
-    // Check for blackout dates
-    const dateOnlyStr = zonedDate.toISOString().split('T')[0]
-    const { data: blackouts } = await supabase
-      .from('blackout_dates')
-      .select('start_date, end_date')
-      .eq('provider_id', providerId)
-      .lte('start_date', dateOnlyStr)
-      .gte('end_date', dateOnlyStr)
-
-    // If there's a blackout for this day, return no slots
-    if (blackouts && blackouts.length > 0) {
+    // Check blackout first (cheap, cached)
+    const isBlackedOut = await isDateBlackedOut(providerId, zonedDate)
+    if (isBlackedOut) {
       return NextResponse.json({ slots: [] })
     }
 
-    // Fetch Google Calendar busy times if connected
+    // OPTIMIZATION: Fetch bookings and calendar busy times in parallel
+    // Calendar busy times are now CACHED (1 minute) - huge performance win
+    const [bookings, calendarToken] = await Promise.all([
+      getBookingsInRange(providerId, dayStart, dayEnd, excludeBookingId),
+      getProviderCalendarToken(providerId),
+    ])
+
+    // Fetch Google Calendar busy times (CACHED)
     let externalBusyTimes: { start: Date; end: Date }[] = []
-    if (provider.google_calendar_token) {
-      externalBusyTimes = await getCalendarBusyTimes(
-        providerId,
-        dayStart,
-        dayEnd
-      )
+    if (calendarToken?.google_calendar_token) {
+      externalBusyTimes = await getCachedBusyTimes(providerId, dayStart, dayEnd)
     }
 
     // Generate slots with combined conflicts
     const slots = generateTimeSlots(
       zonedDate,
       availabilityRules,
-      service as Pick<Service, 'duration_minutes' | 'buffer_minutes'>,
-      (bookings || []) as Pick<Booking, 'start_time' | 'end_time'>[],
+      meeting as Pick<Meeting, 'duration_minutes' | 'buffer_minutes'>,
+      bookings as Pick<Booking, 'start_time' | 'end_time'>[],
       timezone,
       2, // minimumNoticeHours
       externalBusyTimes

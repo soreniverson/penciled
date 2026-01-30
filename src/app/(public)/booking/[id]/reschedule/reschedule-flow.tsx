@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDuration } from '@/lib/utils'
 import { getAvailableDates, type TimeSlot } from '@/lib/availability'
-import type { Provider, Service, Availability, Booking } from '@/types/database'
+import type { Provider, Meeting, Availability, Booking } from '@/types/database'
 import { format } from 'date-fns'
 import { Clock, ArrowLeft, Check, Loader2, CalendarDays } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
@@ -21,14 +21,14 @@ type BlackoutDateRange = {
 type Props = {
   booking: Booking
   provider: Provider
-  service: Service
+  meeting: Meeting
   availability: Availability[]
   token: string
 }
 
 type RescheduleStep = 'date' | 'time' | 'confirmation'
 
-export function RescheduleFlow({ booking, provider, service, availability, token }: Props) {
+export function RescheduleFlow({ booking, provider, meeting, availability, token }: Props) {
   const router = useRouter()
   const [step, setStep] = useState<RescheduleStep>('date')
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -68,7 +68,7 @@ export function RescheduleFlow({ booking, provider, service, availability, token
 
       try {
         const response = await fetch(
-          `/api/availability/slots?provider_id=${provider.id}&service_id=${service.id}&date=${selectedDate.toISOString()}&exclude_booking_id=${booking.id}`
+          `/api/availability/slots?provider_id=${provider.id}&meeting_id=${meeting.id}&date=${selectedDate.toISOString()}&exclude_booking_id=${booking.id}`
         )
 
         if (!response.ok) {
@@ -94,7 +94,7 @@ export function RescheduleFlow({ booking, provider, service, availability, token
     }
 
     fetchSlots()
-  }, [selectedDate, provider.id, service.id, booking.id])
+  }, [selectedDate, provider.id, meeting.id, booking.id])
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
@@ -187,7 +187,7 @@ export function RescheduleFlow({ booking, provider, service, availability, token
                 {step === 'time' && 'Pick a new time'}
               </h2>
               <p className="text-sm text-muted-foreground mt-1 h-5">
-                {step === 'date' && `Rescheduling: ${service.name}`}
+                {step === 'date' && `Rescheduling: ${meeting.name}`}
                 {step === 'time' && selectedDate && format(selectedDate, 'EEEE, MMMM d')}
               </p>
             </div>
@@ -295,8 +295,8 @@ export function RescheduleFlow({ booking, provider, service, availability, token
                 <div className="flex items-start gap-3">
                   <Clock className="size-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="font-medium">{service.name}</p>
-                    <p className="text-sm text-muted-foreground">{formatDuration(service.duration_minutes)}</p>
+                    <p className="font-medium">{meeting.name}</p>
+                    <p className="text-sm text-muted-foreground">{formatDuration(meeting.duration_minutes)}</p>
                   </div>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import { createUntypedClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { LinkBookingFlow } from './link-booking-flow'
-import type { BookingLink, Provider, Service } from '@/types/database'
+import type { BookingLink, Provider, Meeting } from '@/types/database'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -13,16 +13,16 @@ type MemberWithProvider = {
   providers: Provider
 }
 
-type ServiceWithId = {
-  service_id: string
-  services: Service
+type MeetingWithId = {
+  meeting_id: string
+  meetings: Meeting
 }
 
 export default async function LinkBookingPage({ params }: Props) {
   const { slug } = await params
   const supabase = await createUntypedClient()
 
-  // Fetch booking link with members and services
+  // Fetch booking link with members and meetings
   const { data: bookingLink, error } = await supabase
     .from('booking_links')
     .select(`
@@ -32,9 +32,9 @@ export default async function LinkBookingPage({ params }: Props) {
         is_required,
         providers:provider_id (*)
       ),
-      booking_link_services (
-        service_id,
-        services:service_id (*)
+      booking_link_meetings (
+        meeting_id,
+        meetings:meeting_id (*)
       )
     `)
     .eq('slug', slug)
@@ -58,12 +58,12 @@ export default async function LinkBookingPage({ params }: Props) {
     notFound()
   }
 
-  // Extract services
-  const services = (bookingLink.booking_link_services as ServiceWithId[] || [])
-    .filter(s => s.services && s.services.is_active)
-    .map(s => s.services)
+  // Extract meetings
+  const meetings = (bookingLink.booking_link_meetings as MeetingWithId[] || [])
+    .filter(m => m.meetings && m.meetings.is_active)
+    .map(m => m.meetings)
 
-  if (services.length === 0) {
+  if (meetings.length === 0) {
     notFound()
   }
 
@@ -74,7 +74,7 @@ export default async function LinkBookingPage({ params }: Props) {
     <LinkBookingFlow
       bookingLink={bookingLink as BookingLink}
       members={members}
-      services={services}
+      meetings={meetings}
       ownerTimezone={owner?.timezone || 'America/New_York'}
     />
   )

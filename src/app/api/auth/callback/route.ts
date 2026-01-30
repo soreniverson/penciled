@@ -67,14 +67,14 @@ async function handleSuccessfulAuth(
     return redirectTo(request, origin, '/onboarding')
   }
 
-  // Check if user has completed onboarding (has services)
-  const { data: services } = await supabase
-    .from('services')
+  // Check if user has completed onboarding (has meetings)
+  const { data: meetings } = await supabase
+    .from('meetings')
     .select('id')
     .eq('provider_id', user.id)
     .limit(1)
 
-  const redirectPath = services && services.length > 0 ? next : '/onboarding'
+  const redirectPath = meetings && meetings.length > 0 ? next : '/onboarding'
 
   return redirectTo(request, origin, redirectPath)
 }

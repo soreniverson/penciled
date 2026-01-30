@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { RescheduleFlow } from './reschedule-flow'
-import type { Booking, Service, Provider, Availability } from '@/types/database'
+import type { Booking, Meeting, Provider, Availability } from '@/types/database'
 
 type BookingWithDetails = Booking & {
-  services: Service | null
+  meetings: Meeting | null
   providers: Provider | null
 }
 
@@ -19,12 +19,12 @@ export default async function ReschedulePage({ params, searchParams }: Props) {
 
   const supabase = await createClient()
 
-  // Fetch booking with service and provider info
+  // Fetch booking with meeting and provider info
   const { data: booking } = await supabase
     .from('bookings')
     .select(`
       *,
-      services (*),
+      meetings (*),
       providers (*)
     `)
     .eq('id', id)
@@ -74,7 +74,7 @@ export default async function ReschedulePage({ params, searchParams }: Props) {
     .eq('is_active', true)
     .returns<Availability[]>()
 
-  if (!booking.providers || !booking.services) {
+  if (!booking.providers || !booking.meetings) {
     notFound()
   }
 
@@ -82,7 +82,7 @@ export default async function ReschedulePage({ params, searchParams }: Props) {
     <RescheduleFlow
       booking={booking}
       provider={booking.providers}
-      service={booking.services}
+      meeting={booking.meetings}
       availability={availability || []}
       token={token!}
     />

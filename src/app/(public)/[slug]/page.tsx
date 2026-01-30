@@ -1,8 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { BookingFlow } from './booking-flow'
+import { BookingFlow } from '../book/[slug]/booking-flow'
 import { ThemeWrapper } from '@/components/theme-wrapper'
 import type { Provider, Meeting, Availability } from '@/types/database'
+
+// Reserved slugs that should not be used for provider booking pages
+const RESERVED_SLUGS = [
+  'login',
+  'signup',
+  'dashboard',
+  'book',
+  'booking',
+  'api',
+  'team',
+  'auth',
+  'callback',
+  'settings',
+  'admin',
+  'onboarding',
+]
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -10,6 +26,12 @@ type Props = {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
+
+  // Check reserved slugs
+  if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
+    return { title: 'Not Found' }
+  }
+
   const supabase = await createClient()
 
   const { data: provider } = await supabase
@@ -20,9 +42,7 @@ export async function generateMetadata({ params }: Props) {
     .then(res => ({ ...res, data: res.data as Pick<Provider, 'business_name'> | null }))
 
   if (!provider) {
-    return {
-      title: 'Not Found',
-    }
+    return { title: 'Not Found' }
   }
 
   return {
@@ -31,8 +51,14 @@ export async function generateMetadata({ params }: Props) {
   }
 }
 
-export default async function BookingPage({ params }: Props) {
+export default async function ProviderBookingPage({ params }: Props) {
   const { slug } = await params
+
+  // Check reserved slugs - redirect to 404
+  if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
+    notFound()
+  }
+
   const supabase = await createClient()
 
   // Fetch provider by slug

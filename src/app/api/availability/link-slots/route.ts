@@ -1,13 +1,13 @@
 import { createUntypedAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { getIntersectionAvailability, getIntersectionAvailableDates } from '@/lib/multi-availability'
-import type { Service } from '@/types/database'
+import type { Meeting } from '@/types/database'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const bookingLinkId = searchParams.get('booking_link_id')
-    const serviceId = searchParams.get('service_id')
+    const meetingId = searchParams.get('meeting_id')
     const dateStr = searchParams.get('date')
     const action = searchParams.get('action') || 'slots' // 'slots' or 'dates'
 
@@ -78,37 +78,37 @@ export async function GET(request: Request) {
     }
 
     // Return available slots for a specific date
-    if (!serviceId || !dateStr) {
+    if (!meetingId || !dateStr) {
       return NextResponse.json(
-        { error: 'Missing required parameters: service_id, date' },
+        { error: 'Missing required parameters: meeting_id, date' },
         { status: 400 }
       )
     }
 
-    // Verify service is on this booking link
-    const { data: linkService } = await supabase
-      .from('booking_link_services')
+    // Verify meeting is on this booking link
+    const { data: linkMeeting } = await supabase
+      .from('booking_link_meetings')
       .select('id')
       .eq('booking_link_id', bookingLinkId)
-      .eq('service_id', serviceId)
+      .eq('meeting_id', meetingId)
       .single()
 
-    if (!linkService) {
+    if (!linkMeeting) {
       return NextResponse.json(
-        { error: 'Service not available on this booking link' },
+        { error: 'Meeting not available on this booking link' },
         { status: 400 }
       )
     }
 
-    // Fetch service details
-    const { data: service } = await supabase
-      .from('services')
+    // Fetch meeting details
+    const { data: meeting } = await supabase
+      .from('meetings')
       .select('duration_minutes, buffer_minutes')
-      .eq('id', serviceId)
+      .eq('id', meetingId)
       .single()
 
-    if (!service) {
-      return NextResponse.json({ error: 'Service not found' }, { status: 404 })
+    if (!meeting) {
+      return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
     }
 
     const requestedDate = new Date(dateStr)
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
       memberIds,
       requiredMemberIds,
       requestedDate,
-      service as Pick<Service, 'duration_minutes' | 'buffer_minutes'>,
+      meeting as Pick<Meeting, 'duration_minutes' | 'buffer_minutes'>,
       timezone
     )
 

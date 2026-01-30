@@ -7,10 +7,10 @@ import { Calendar, Clock, Mail, Phone, User, Users } from 'lucide-react'
 import { CancelBookingButton } from './cancel-button'
 import { CompleteBookingButton } from './complete-button'
 import { ApproveBookingButton, DeclineBookingButton } from './approve-button'
-import type { Booking, Service } from '@/types/database'
+import type { Booking, Meeting } from '@/types/database'
 
-type BookingWithService = Booking & {
-  services: Pick<Service, 'name' | 'duration_minutes'> | null
+type BookingWithMeeting = Booking & {
+  meetings: Pick<Meeting, 'name' | 'duration_minutes'> | null
   booking_links?: { name: string } | null
   isTeamBooking?: boolean
 }
@@ -36,23 +36,23 @@ export default async function BookingsPage() {
     .from('bookings')
     .select(`
       *,
-      services (name, duration_minutes),
+      meetings (name, duration_minutes),
       booking_links (name)
     `)
     .eq('provider_id', user.id)
     .in('status', ['confirmed', 'pending'])
     .gte('start_time', new Date().toISOString())
     .order('start_time', { ascending: true })
-    .returns<BookingWithService[]>()
+    .returns<BookingWithMeeting[]>()
 
   // Get team bookings (where user is a team member but not the provider)
-  let teamBookings: BookingWithService[] = []
+  let teamBookings: BookingWithMeeting[] = []
   if (teamLinkIds.length > 0) {
     const { data: teamData } = await supabase
       .from('bookings')
       .select(`
         *,
-        services (name, duration_minutes),
+        meetings (name, duration_minutes),
         booking_links (name)
       `)
       .in('booking_link_id', teamLinkIds)
@@ -60,7 +60,7 @@ export default async function BookingsPage() {
       .in('status', ['confirmed', 'pending'])
       .gte('start_time', new Date().toISOString())
       .order('start_time', { ascending: true })
-      .returns<BookingWithService[]>()
+      .returns<BookingWithMeeting[]>()
 
     teamBookings = (teamData || []).map(b => ({ ...b, isTeamBooking: true }))
   }
@@ -77,7 +77,7 @@ export default async function BookingsPage() {
     .from('bookings')
     .select(`
       *,
-      services (name, duration_minutes),
+      meetings (name, duration_minutes),
       booking_links (name)
     `)
     .eq('provider_id', user.id)
@@ -85,7 +85,7 @@ export default async function BookingsPage() {
     .gte('start_time', thirtyDaysAgo.toISOString())
     .order('start_time', { ascending: false })
     .limit(20)
-    .returns<BookingWithService[]>()
+    .returns<BookingWithMeeting[]>()
 
   return (
     <div className="space-y-4 max-w-[780px] mx-auto">
@@ -107,7 +107,7 @@ export default async function BookingsPage() {
                         <span className={`size-2 rounded-full ${
                           booking.status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
                         }`} />
-                        <span className="font-medium">{booking.services?.name}</span>
+                        <span className="font-medium">{booking.meetings?.name}</span>
                         {booking.booking_links?.name && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                             <Users className="size-3" />
@@ -147,7 +147,7 @@ export default async function BookingsPage() {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       {booking.status === 'pending' ? (
                         <>
                           <ApproveBookingButton bookingId={booking.id} clientName={booking.client_name} />
@@ -187,7 +187,7 @@ export default async function BookingsPage() {
                           booking.status === 'completed' ? 'bg-blue-500' :
                           booking.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-500'
                         }`} />
-                        <span className="font-medium">{booking.services?.name}</span>
+                        <span className="font-medium">{booking.meetings?.name}</span>
                         <span className="text-xs text-muted-foreground capitalize">({booking.status})</span>
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">

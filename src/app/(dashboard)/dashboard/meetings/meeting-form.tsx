@@ -23,7 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Loader2 } from 'lucide-react'
-import type { Service } from '@/types/database'
+import type { Meeting } from '@/types/database'
 
 const DURATION_OPTIONS = [
   { value: '15', label: '15 minutes' },
@@ -49,23 +49,22 @@ const BOOKING_MODE_OPTIONS = [
 
 type Props = {
   providerId: string
-  service?: Service
+  meeting?: Meeting
   children: React.ReactNode
 }
 
-export function ServiceForm({ providerId, service, children }: Props) {
+export function MeetingForm({ providerId, meeting, children }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const [name, setName] = useState(service?.name || '')
-  const [description, setDescription] = useState(service?.description || '')
-  const [duration, setDuration] = useState(String(service?.duration_minutes || 60))
-  const [price, setPrice] = useState(service?.price_cents ? String(service.price_cents / 100) : '')
-  const [buffer, setBuffer] = useState(String(service?.buffer_minutes || 15))
-  const [bookingMode, setBookingMode] = useState<'instant' | 'request'>(service?.booking_mode || 'instant')
+  const [name, setName] = useState(meeting?.name || '')
+  const [description, setDescription] = useState(meeting?.description || '')
+  const [duration, setDuration] = useState(String(meeting?.duration_minutes || 60))
+  const [buffer, setBuffer] = useState(String(meeting?.buffer_minutes || 15))
+  const [bookingMode, setBookingMode] = useState<'instant' | 'request'>(meeting?.booking_mode || 'instant')
 
-  const isEditing = !!service
+  const isEditing = !!meeting
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,31 +74,28 @@ export function ServiceForm({ providerId, service, children }: Props) {
 
     try {
       const supabase = createClient()
-      const priceCents = price ? Math.round(parseFloat(price) * 100) : null
 
       if (isEditing) {
         await supabase
-          .from('services')
+          .from('meetings')
           // @ts-ignore - Supabase types not inferring correctly
           .update({
             name,
             description: description || null,
             duration_minutes: parseInt(duration),
-            price_cents: priceCents,
             buffer_minutes: parseInt(buffer),
             booking_mode: bookingMode,
           })
-          .eq('id', service.id)
+          .eq('id', meeting.id)
       } else {
         await supabase
-          .from('services')
+          .from('meetings')
           // @ts-ignore - Supabase types not inferring correctly
           .insert({
             provider_id: providerId,
             name,
             description: description || null,
             duration_minutes: parseInt(duration),
-            price_cents: priceCents,
             buffer_minutes: parseInt(buffer),
             booking_mode: bookingMode,
           })
@@ -108,16 +104,15 @@ export function ServiceForm({ providerId, service, children }: Props) {
       setOpen(false)
       router.refresh()
 
-      // Reset form for new services
+      // Reset form for new meetings
       if (!isEditing) {
         setName('')
         setDescription('')
         setDuration('60')
-        setPrice('')
         setBuffer('15')
       }
     } catch (error) {
-      console.error('Service save error:', error)
+      console.error('Meeting save error:', error)
     } finally {
       setLoading(false)
     }
@@ -131,9 +126,9 @@ export function ServiceForm({ providerId, service, children }: Props) {
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Service' : 'Add Service'}</DialogTitle>
+            <DialogTitle>{isEditing ? 'Edit Meeting' : 'Add Meeting'}</DialogTitle>
             <DialogDescription>
-              {isEditing ? 'Update the details of this service.' : 'Create a new service for clients to book.'}
+              {isEditing ? 'Update the details of this meeting.' : 'Create a new meeting type for clients to book.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -144,7 +139,7 @@ export function ServiceForm({ providerId, service, children }: Props) {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Piano Lesson"
+                placeholder="e.g., Consultation Call"
               />
             </div>
             <div className="space-y-2">
@@ -153,7 +148,7 @@ export function ServiceForm({ providerId, service, children }: Props) {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of this service"
+                placeholder="Brief description of this meeting"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -189,24 +184,6 @@ export function ServiceForm({ providerId, service, children }: Props) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Price (optional)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="pl-7"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
               <Label>Booking Mode</Label>
               <Select value={bookingMode} onValueChange={(v) => setBookingMode(v as 'instant' | 'request')}>
                 <SelectTrigger>
@@ -231,7 +208,7 @@ export function ServiceForm({ providerId, service, children }: Props) {
             </Button>
             <Button type="submit" disabled={loading || !name.trim()}>
               {loading && <Loader2 className="size-4 mr-2 animate-spin" />}
-              {isEditing ? 'Save Changes' : 'Add Service'}
+              {isEditing ? 'Save Changes' : 'Add Meeting'}
             </Button>
           </DialogFooter>
         </form>

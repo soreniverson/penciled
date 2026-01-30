@@ -5,14 +5,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, ExternalLink, Clock, Mail, User } from 'lucide-react'
 import { format, isToday, isTomorrow, isThisWeek } from 'date-fns'
-import type { Provider, Booking, Service } from '@/types/database'
+import type { Provider, Booking, Meeting } from '@/types/database'
 import { CopyButton } from '@/components/copy-button'
 import { CancelBookingButton } from './bookings/cancel-button'
 import { CompleteBookingButton } from './bookings/complete-button'
 import { ApproveBookingButton, DeclineBookingButton } from './bookings/approve-button'
 
-type BookingWithService = Booking & {
-  services: Pick<Service, 'name' | 'duration_minutes'> | null
+type BookingWithMeeting = Booking & {
+  meetings: Pick<Meeting, 'name' | 'duration_minutes'> | null
 }
 
 function formatBookingDate(date: Date): string {
@@ -39,12 +39,12 @@ export default async function DashboardPage() {
   // Get all upcoming bookings
   const { data: upcomingBookings } = await supabase
     .from('bookings')
-    .select('*, services(name, duration_minutes)')
+    .select('*, meetings(name, duration_minutes)')
     .eq('provider_id', user.id)
     .in('status', ['confirmed', 'pending'])
     .gte('start_time', new Date().toISOString())
     .order('start_time', { ascending: true })
-    .returns<BookingWithService[]>()
+    .returns<BookingWithMeeting[]>()
 
   // Get past bookings (last 30 days)
   const thirtyDaysAgo = new Date()
@@ -52,16 +52,16 @@ export default async function DashboardPage() {
 
   const { data: pastBookings } = await supabase
     .from('bookings')
-    .select('*, services(name, duration_minutes)')
+    .select('*, meetings(name, duration_minutes)')
     .eq('provider_id', user.id)
     .lt('start_time', new Date().toISOString())
     .gte('start_time', thirtyDaysAgo.toISOString())
     .order('start_time', { ascending: false })
     .limit(10)
-    .returns<BookingWithService[]>()
+    .returns<BookingWithMeeting[]>()
 
   const bookingPageUrl = provider?.slug
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/book/${provider.slug}`
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/${provider.slug}`
     : null
 
   return (
@@ -72,7 +72,7 @@ export default async function DashboardPage() {
         {bookingPageUrl && (
           <div className="flex gap-2">
             <CopyButton text={bookingPageUrl} />
-            <Link href={`/book/${provider?.slug}`} target="_blank">
+            <Link href={`/${provider?.slug}`} target="_blank">
               <Button variant="outline" size="sm" className="gap-1">
                 Open <ExternalLink className="size-3" />
               </Button>
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
                             }`} />
                             <p className="font-medium truncate">{booking.client_name}</p>
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">{booking.services?.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{booking.meetings?.name}</p>
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
@@ -160,7 +160,7 @@ export default async function DashboardPage() {
                             <p className="font-medium truncate">{booking.client_name}</p>
                             <span className="text-xs text-muted-foreground capitalize">({booking.status})</span>
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">{booking.services?.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{booking.meetings?.name}</p>
                         </div>
                       </div>
                       {booking.status === 'confirmed' && (
