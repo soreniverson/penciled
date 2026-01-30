@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,6 +22,7 @@ type Props = {
   provider: Provider
   meetings: Meeting[]
   availability: Availability[]
+  blackoutDates: BlackoutDateRange[]
 }
 
 type BookingStep = 'service' | 'date' | 'time' | 'details' | 'confirmation'
@@ -43,7 +43,7 @@ function formatTimezone(timezone: string): string {
   }
 }
 
-export function BookingFlow({ provider, meetings, availability }: Props) {
+export function BookingFlow({ provider, meetings, availability, blackoutDates }: Props) {
   const [step, setStep] = useState<BookingStep>('service')
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -60,24 +60,6 @@ export function BookingFlow({ provider, meetings, availability }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [isPendingRequest, setIsPendingRequest] = useState(false)
-  const [blackoutDates, setBlackoutDates] = useState<BlackoutDateRange[]>([])
-
-  // Fetch blackout dates on mount
-  useEffect(() => {
-    const fetchBlackoutDates = async () => {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('blackout_dates')
-        .select('start_date, end_date')
-        .eq('provider_id', provider.id)
-
-      if (data) {
-        setBlackoutDates(data)
-      }
-    }
-
-    fetchBlackoutDates()
-  }, [provider.id])
 
   const availableDates = useMemo(() => {
     if (!selectedMeeting) return []

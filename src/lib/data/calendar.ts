@@ -11,29 +11,31 @@ import { CACHE_TIMES } from './cache'
  *
  * Cache key includes provider ID and date to ensure freshness per day.
  */
-export const getCalendarBusyTimesCached = unstable_cache(
-  async (
-    providerId: string,
-    startDateIso: string,
-    endDateIso: string
-  ): Promise<{ start: string; end: string }[]> => {
-    const startDate = new Date(startDateIso)
-    const endDate = new Date(endDateIso)
+export function getCalendarBusyTimesCached(
+  providerId: string,
+  startDateIso: string,
+  endDateIso: string
+): Promise<{ start: string; end: string }[]> {
+  return unstable_cache(
+    async (): Promise<{ start: string; end: string }[]> => {
+      const startDate = new Date(startDateIso)
+      const endDate = new Date(endDateIso)
 
-    const busyTimes = await fetchCalendarBusyTimes(providerId, startDate, endDate)
+      const busyTimes = await fetchCalendarBusyTimes(providerId, startDate, endDate)
 
-    // Serialize dates for caching
-    return busyTimes.map(({ start, end }) => ({
-      start: start.toISOString(),
-      end: end.toISOString(),
-    }))
-  },
-  ['calendar-busy-times'],
-  {
-    revalidate: CACHE_TIMES.calendarBusy,
-    tags: ['calendar'],
-  }
-)
+      // Serialize dates for caching
+      return busyTimes.map(({ start, end }) => ({
+        start: start.toISOString(),
+        end: end.toISOString(),
+      }))
+    },
+    ['calendar-busy-times', providerId, startDateIso, endDateIso],
+    {
+      revalidate: CACHE_TIMES.calendarBusy,
+      tags: ['calendar'],
+    }
+  )()
+}
 
 /**
  * Get busy times for multiple providers - batched and cached

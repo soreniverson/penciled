@@ -23,38 +23,42 @@ export const getMeeting = cache(async (meetingId: string): Promise<Meeting | nul
  * Get meeting duration and buffer - cached
  * This is frequently needed for slot generation
  */
-export const getMeetingConfig = unstable_cache(
-  async (meetingId: string): Promise<Pick<Meeting, 'duration_minutes' | 'buffer_minutes'> | null> => {
-    const supabase = createAdminClient()
+export function getMeetingConfig(meetingId: string): Promise<Pick<Meeting, 'duration_minutes' | 'buffer_minutes'> | null> {
+  return unstable_cache(
+    async (): Promise<Pick<Meeting, 'duration_minutes' | 'buffer_minutes'> | null> => {
+      const supabase = createAdminClient()
 
-    const { data } = await supabase
-      .from('meetings')
-      .select('duration_minutes, buffer_minutes')
-      .eq('id', meetingId)
-      .single()
+      const { data } = await supabase
+        .from('meetings')
+        .select('duration_minutes, buffer_minutes')
+        .eq('id', meetingId)
+        .single()
 
-    return data as Pick<Meeting, 'duration_minutes' | 'buffer_minutes'> | null
-  },
-  ['meeting-config'],
-  { revalidate: CACHE_TIMES.meetings }
-)
+      return data as Pick<Meeting, 'duration_minutes' | 'buffer_minutes'> | null
+    },
+    ['meeting-config', meetingId],
+    { revalidate: CACHE_TIMES.meetings }
+  )()
+}
 
 /**
  * Get all active meetings for a provider - cached
  */
-export const getProviderMeetings = unstable_cache(
-  async (providerId: string): Promise<Meeting[]> => {
-    const supabase = createAdminClient()
+export function getProviderMeetings(providerId: string): Promise<Meeting[]> {
+  return unstable_cache(
+    async (): Promise<Meeting[]> => {
+      const supabase = createAdminClient()
 
-    const { data } = await supabase
-      .from('meetings')
-      .select('*')
-      .eq('provider_id', providerId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
+      const { data } = await supabase
+        .from('meetings')
+        .select('*')
+        .eq('provider_id', providerId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
 
-    return (data || []) as Meeting[]
-  },
-  ['provider-meetings'],
-  { revalidate: CACHE_TIMES.meetings }
-)
+      return (data || []) as Meeting[]
+    },
+    ['provider-meetings', providerId],
+    { revalidate: CACHE_TIMES.meetings }
+  )()
+}

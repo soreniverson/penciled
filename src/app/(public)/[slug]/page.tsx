@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { BookingFlow } from '../book/[slug]/booking-flow'
 import { ThemeWrapper } from '@/components/theme-wrapper'
-import type { Provider, Meeting, Availability } from '@/types/database'
+import { getProviderBySlug } from '@/lib/data/providers'
+import { getProviderBlackoutDates } from '@/lib/data/availability'
+import type { Meeting, Availability } from '@/types/database'
 
 // Reserved slugs that should not be used for provider booking pages
 const RESERVED_SLUGS = [
@@ -27,19 +29,11 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
 
-  // Check reserved slugs
   if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
     return { title: 'Not Found' }
   }
 
-  const supabase = await createClient()
-
-  const { data: provider } = await supabase
-    .from('providers')
-    .select('business_name')
-    .eq('slug', slug)
-    .single()
-    .then(res => ({ ...res, data: res.data as Pick<Provider, 'business_name'> | null }))
+  const provider = await getProviderBySlug(slug)
 
   if (!provider) {
     return { title: 'Not Found' }
@@ -54,41 +48,39 @@ export async function generateMetadata({ params }: Props) {
 export default async function ProviderBookingPage({ params }: Props) {
   const { slug } = await params
 
-  // Check reserved slugs - redirect to 404
   if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
     notFound()
   }
 
-  const supabase = await createClient()
-
-  // Fetch provider by slug
-  const { data: provider } = await supabase
-    .from('providers')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-    .then(res => ({ ...res, data: res.data as Provider | null }))
+  // Use cached provider lookup
+  const provider = await getProviderBySlug(slug)
 
   if (!provider) {
     notFound()
   }
 
-  // Fetch active meetings
-  const { data: meetings } = await supabase
-    .from('meetings')
-    .select('*')
-    .eq('provider_id', provider.id)
-    .eq('is_active', true)
-    .order('created_at', { ascending: true })
-    .returns<Meeting[]>()
+  const supabase = await createClient()
 
-  // Fetch availability
-  const { data: availability } = await supabase
-    .from('availability')
-    .select('*')
-    .eq('provider_id', provider.id)
-    .eq('is_active', true)
-    .returns<Availability[]>()
+  // Fetch meetings, availability, and blackout dates in parallel
+  const [meetingsResult, availabilityResult, blackoutDates] = await Promise.all([
+    supabase
+      .from('meetings')
+      .select('*')
+      .eq('provider_id', provider.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .returns<Meeting[]>(),
+    supabase
+      .from('availability')
+      .select('*')
+      .eq('provider_id', provider.id)
+      .eq('is_active', true)
+      .returns<Availability[]>(),
+    getProviderBlackoutDates(provider.id),
+  ])
+
+  const meetings = meetingsResult.data
+  const availability = availabilityResult.data
 
   if (!meetings || meetings.length === 0) {
     return (
@@ -111,6 +103,7 @@ export default async function ProviderBookingPage({ params }: Props) {
         provider={provider}
         meetings={meetings}
         availability={availability || []}
+        blackoutDates={blackoutDates}
       />
     </ThemeWrapper>
   )
