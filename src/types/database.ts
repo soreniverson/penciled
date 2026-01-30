@@ -26,6 +26,23 @@ export type Database = {
           added_at?: string
         }
       }
+      waitlist_requests: {
+        Row: {
+          id: string
+          email: string
+          requested_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          requested_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          requested_at?: string
+        }
+      }
       providers: {
         Row: {
           id: string
