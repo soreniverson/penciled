@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, ExternalLink, Clock, Mail, User } from 'lucide-react'
 import { format, isToday, isTomorrow, isThisWeek } from 'date-fns'
-import type { Provider, Booking, Meeting } from '@/types/database'
+import type { Booking, Meeting } from '@/types/database'
 import { CopyButton } from '@/components/copy-button'
 import { CancelBookingButton } from './bookings/cancel-button'
 import { CompleteBookingButton } from './bookings/complete-button'
@@ -29,36 +29,39 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  const { data: provider } = await supabase
-    .from('providers')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-    .then(res => ({ ...res, data: res.data as Provider | null }))
-
-  // Get all upcoming bookings
-  const { data: upcomingBookings } = await supabase
-    .from('bookings')
-    .select('*, meetings(name, duration_minutes)')
-    .eq('provider_id', user.id)
-    .in('status', ['confirmed', 'pending'])
-    .gte('start_time', new Date().toISOString())
-    .order('start_time', { ascending: true })
-    .returns<BookingWithMeeting[]>()
-
-  // Get past bookings (last 30 days)
+  const now = new Date().toISOString()
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  const { data: pastBookings } = await supabase
-    .from('bookings')
-    .select('*, meetings(name, duration_minutes)')
-    .eq('provider_id', user.id)
-    .lt('start_time', new Date().toISOString())
-    .gte('start_time', thirtyDaysAgo.toISOString())
-    .order('start_time', { ascending: false })
-    .limit(10)
-    .returns<BookingWithMeeting[]>()
+  // Run all queries in parallel
+  const [providerResult, upcomingResult, pastResult] = await Promise.all([
+    supabase
+      .from('providers')
+      .select('slug')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('bookings')
+      .select('*, meetings(name, duration_minutes)')
+      .eq('provider_id', user.id)
+      .in('status', ['confirmed', 'pending'])
+      .gte('start_time', now)
+      .order('start_time', { ascending: true })
+      .returns<BookingWithMeeting[]>(),
+    supabase
+      .from('bookings')
+      .select('*, meetings(name, duration_minutes)')
+      .eq('provider_id', user.id)
+      .lt('start_time', now)
+      .gte('start_time', thirtyDaysAgo.toISOString())
+      .order('start_time', { ascending: false })
+      .limit(10)
+      .returns<BookingWithMeeting[]>(),
+  ])
+
+  const provider = providerResult.data as { slug: string } | null
+  const upcomingBookings = upcomingResult.data
+  const pastBookings = pastResult.data
 
   const bookingPageUrl = provider?.slug
     ? `${process.env.NEXT_PUBLIC_APP_URL}/${provider.slug}`
