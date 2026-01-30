@@ -62,7 +62,7 @@ export function ApproveBookingButton({ bookingId, clientName }: Props) {
         <DialogHeader>
           <DialogTitle>Approve booking?</DialogTitle>
           <DialogDescription>
-            This will confirm the appointment with {clientName}. They will be notified by email and the event will be added to your calendar.
+            This will confirm the appointment with {clientName}. {clientName.split(' ')[0]} will be notified by email and the event will be added to your calendar.
           </DialogDescription>
         </DialogHeader>
         {error && (
@@ -126,7 +126,7 @@ export function DeclineBookingButton({ bookingId, clientName }: Props) {
         <DialogHeader>
           <DialogTitle>Decline booking request?</DialogTitle>
           <DialogDescription>
-            This will decline the booking request from {clientName}. They will be notified by email.
+            This will decline the booking request from {clientName}. {clientName.split(' ')[0]} will be notified by email.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">

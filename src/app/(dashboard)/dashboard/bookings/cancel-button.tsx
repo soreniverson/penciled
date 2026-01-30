@@ -61,7 +61,7 @@ export function CancelBookingButton({ bookingId, clientName }: Props) {
         <DialogHeader>
           <DialogTitle>Cancel booking?</DialogTitle>
           <DialogDescription>
-            This will cancel the appointment with {clientName}. They will be notified by email.
+            This will cancel the appointment with {clientName}. {clientName.split(' ')[0]} will be notified by email.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">

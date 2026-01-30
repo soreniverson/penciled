@@ -60,7 +60,7 @@ export function CancelBookingClient({ bookingId, token, providerName }: Props) {
         <DialogHeader>
           <DialogTitle>Cancel your booking?</DialogTitle>
           <DialogDescription>
-            This will cancel your appointment with {providerName}. They will be notified by email.
+            This will cancel your appointment with {providerName}. {providerName.split(' ')[0]} will be notified by email.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
