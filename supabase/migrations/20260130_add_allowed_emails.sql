@@ -14,3 +14,11 @@ ALTER TABLE allowed_emails ENABLE ROW LEVEL SECURITY;
 -- Policy: Only service role can read (auth callback uses service role via admin client)
 CREATE POLICY "Service role can read allowed_emails" ON allowed_emails
   FOR SELECT USING (true);
+
+-- Seed initial beta testers
+INSERT INTO allowed_emails (email) VALUES
+  ('soren@iverson.inc'),
+  ('david@iverson.inc'),
+  ('patricia@iverson.inc'),
+  ('kyle@iverson.inc'),
+  ('levi@iverson.inc');
