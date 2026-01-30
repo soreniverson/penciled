@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -46,6 +47,20 @@ async function handleSuccessfulAuth(
   next: string,
   origin: string
 ) {
+  // Check if email is in the allowlist (beta access control)
+  const adminClient = createAdminClient()
+  const { data: allowedEmail } = await adminClient
+    .from('allowed_emails')
+    .select('id')
+    .eq('email', user.email?.toLowerCase() || '')
+    .single()
+
+  if (!allowedEmail) {
+    // Sign out the user and redirect to waitlist
+    await supabase.auth.signOut()
+    return redirectTo(request, origin, '/waitlist')
+  }
+
   // Check if provider record exists, if not create one
   const { data: existingProvider } = await supabase
     .from('providers')
