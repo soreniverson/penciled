@@ -111,6 +111,11 @@ export async function getCalendarBusyTimes(
   }
 }
 
+export type CalendarEventResult = {
+  eventId: string | null
+  meetingLink: string | null
+}
+
 export async function createCalendarEvent(
   providerId: string,
   booking: {
@@ -123,9 +128,9 @@ export async function createCalendarEvent(
     notes?: string | null
   },
   meetingName: string
-): Promise<string | null> {
+): Promise<CalendarEventResult> {
   const oauth2Client = await getAuthorizedClient(providerId)
-  if (!oauth2Client) return null
+  if (!oauth2Client) return { eventId: null, meetingLink: null }
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
   const supabase = createAdminClient()
@@ -154,6 +159,7 @@ export async function createCalendarEvent(
   try {
     const response = await calendar.events.insert({
       calendarId,
+      conferenceDataVersion: 1, // Enable Google Meet creation
       requestBody: {
         summary: `${meetingName} with ${booking.client_name}`,
         description,
@@ -162,6 +168,17 @@ export async function createCalendarEvent(
         },
         end: {
           dateTime: booking.end_time,
+        },
+        // Add client as attendee so they get the calendar invite
+        attendees: [
+          { email: booking.client_email, displayName: booking.client_name },
+        ],
+        // Request Google Meet link
+        conferenceData: {
+          createRequest: {
+            requestId: booking.id, // Unique ID for idempotency
+            conferenceSolutionKey: { type: 'hangoutsMeet' },
+          },
         },
         reminders: {
           useDefault: false,
@@ -174,20 +191,28 @@ export async function createCalendarEvent(
     })
 
     const eventId = response.data.id || null
+    const meetingLink = response.data.conferenceData?.entryPoints?.find(
+      (ep) => ep.entryPointType === 'video'
+    )?.uri || response.data.hangoutLink || null
 
-    // Store event ID in booking
-    if (eventId) {
+    // Store event ID and meeting link in booking
+    if (eventId || meetingLink) {
       await supabase
         .from('bookings')
         // @ts-ignore - Supabase types not inferring correctly
-        .update({ google_event_id: eventId })
+        .update({
+          google_event_id: eventId,
+          meeting_link: meetingLink,
+        })
         .eq('id', booking.id)
     }
 
-    return eventId
+    console.log('Calendar event created:', { eventId, meetingLink })
+
+    return { eventId, meetingLink }
   } catch (error) {
     console.error('Failed to create calendar event:', error)
-    return null
+    return { eventId: null, meetingLink: null }
   }
 }
 

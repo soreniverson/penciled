@@ -144,6 +144,7 @@ export type Database = {
           end_time: string
           status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           google_event_id: string | null
+          meeting_link: string | null
           notes: string | null
           cancelled_at: string | null
           cancellation_reason: string | null
@@ -163,6 +164,7 @@ export type Database = {
           end_time: string
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           google_event_id?: string | null
+          meeting_link?: string | null
           notes?: string | null
           cancelled_at?: string | null
           cancellation_reason?: string | null
@@ -182,6 +184,7 @@ export type Database = {
           end_time?: string
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           google_event_id?: string | null
+          meeting_link?: string | null
           notes?: string | null
           cancelled_at?: string | null
           cancellation_reason?: string | null

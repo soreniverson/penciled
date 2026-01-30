@@ -18,14 +18,22 @@ type BookingEmailData = {
   endTime: Date
   timezone: string
   notes?: string | null
+  meetingLink?: string | null
 }
 
 export async function sendBookingConfirmationToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, meetingLink } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
+
+  const meetingLinkHtml = meetingLink ? `
+          <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
+            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+          </div>
+  ` : ''
 
   try {
     await resend.emails.send({
@@ -52,6 +60,8 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
           </div>
+
+          ${meetingLinkHtml}
 
           <p style="margin-bottom: 24px;">
             Need to make changes?
@@ -311,11 +321,18 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
 }
 
 export async function sendBookingApprovalToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, meetingLink } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
+
+  const meetingLinkHtml = meetingLink ? `
+          <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
+            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+          </div>
+  ` : ''
 
   try {
     await resend.emails.send({
@@ -342,6 +359,8 @@ export async function sendBookingApprovalToClient(data: BookingEmailData) {
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
           </div>
+
+          ${meetingLinkHtml}
 
           <p style="margin-bottom: 24px;">
             Need to make changes?
@@ -468,13 +487,20 @@ export async function sendCancellationEmailToProvider(data: BookingEmailData & {
 
 // Reminder emails
 export async function sendReminderEmailToClient(data: BookingEmailData & { hoursUntil: number }) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, hoursUntil } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, hoursUntil, meetingLink } = data
 
   const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   const timeLabel = hoursUntil === 24 ? 'tomorrow' : 'in 1 hour'
+
+  const meetingLinkHtml = meetingLink ? `
+          <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
+            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+          </div>
+  ` : ''
 
   try {
     await resend.emails.send({
@@ -501,6 +527,8 @@ export async function sendReminderEmailToClient(data: BookingEmailData & { hours
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
             <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
           </div>
+
+          ${meetingLinkHtml}
 
           <p style="margin-bottom: 24px;">
             Need to make changes?

@@ -176,33 +176,64 @@ export async function POST(request: Request) {
     if (teamMembers.length > 0 && booking) {
       const primaryMember = teamMembers[0]
 
-      const baseEmailData = {
-        bookingId: booking.id,
-        managementToken: booking.management_token,
-        meetingName,
-        providerName: displayName,
-        clientName: client_name,
-        clientEmail: client_email,
-        startTime: new Date(start_time),
-        endTime: new Date(end_time),
-        timezone: primaryMember.timezone,
-        notes: notes || null,
-      }
-
       console.log('Sending booking emails to team:', teamMembers.map(m => ({
         email: m.email,
         hasGoogleCalendar: !!m.google_calendar_token
       })))
 
       try {
-        // Send client email once
+        let meetingLink: string | null = null
+
+        // For instant bookings, create calendar event FIRST to get meeting link
+        if (bookingMode !== 'request') {
+          // Create calendar events for all members with Google connected
+          const calendarResults = await Promise.all(
+            teamMembers
+              .filter(member => member.google_calendar_token)
+              .map(member =>
+                createCalendarEvent(
+                  member.id,
+                  {
+                    id: booking.id,
+                    client_name,
+                    client_email,
+                    client_phone,
+                    start_time,
+                    end_time,
+                    notes,
+                  },
+                  meetingName
+                )
+              )
+          )
+
+          // Get the meeting link from the first successful calendar event
+          meetingLink = calendarResults.find(r => r.meetingLink)?.meetingLink || null
+          console.log('Calendar events created, meeting link:', meetingLink)
+        }
+
+        const baseEmailData = {
+          bookingId: booking.id,
+          managementToken: booking.management_token,
+          meetingName,
+          providerName: displayName,
+          clientName: client_name,
+          clientEmail: client_email,
+          startTime: new Date(start_time),
+          endTime: new Date(end_time),
+          timezone: primaryMember.timezone,
+          notes: notes || null,
+          meetingLink,
+        }
+
+        // Send client email with meeting link
         if (bookingMode === 'request') {
           await sendBookingRequestToClient({ ...baseEmailData, providerEmail: primaryMember.email })
         } else {
           await sendBookingConfirmationToClient({ ...baseEmailData, providerEmail: primaryMember.email })
         }
 
-        // Send provider notifications and create calendar events for ALL team members
+        // Send provider notifications to ALL team members
         await Promise.all(
           teamMembers.map(async (member) => {
             const memberEmailData = {
@@ -211,28 +242,10 @@ export async function POST(request: Request) {
               providerName: displayName,
             }
 
-            // Send email to this team member
             if (bookingMode === 'request') {
               await sendBookingRequestToProvider(memberEmailData)
             } else {
               await sendBookingNotificationToProvider(memberEmailData)
-            }
-
-            // Create calendar event if they have Google connected (instant bookings only)
-            if (bookingMode !== 'request' && member.google_calendar_token) {
-              await createCalendarEvent(
-                member.id,
-                {
-                  id: booking.id,
-                  client_name,
-                  client_email,
-                  client_phone,
-                  start_time,
-                  end_time,
-                  notes,
-                },
-                meetingName
-              )
             }
           })
         )

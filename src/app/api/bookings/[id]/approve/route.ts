@@ -150,27 +150,14 @@ export async function POST(request: Request, { params }: RouteContext) {
     if (meeting && teamMembers.length > 0) {
       const primaryMember = teamMembers[0]
 
-      const baseEmailData = {
-        bookingId: booking.id,
-        managementToken: booking.management_token,
-        meetingName: meeting.name,
-        providerName: displayName,
-        clientName: booking.client_name,
-        clientEmail: booking.client_email,
-        startTime: new Date(booking.start_time),
-        endTime: new Date(booking.end_time),
-        timezone: primaryMember.timezone,
-      }
+      // Create calendar events FIRST to get meeting link
+      let meetingLink: string | null = null
 
-      // Send approval email to client
-      await sendBookingApprovalToClient({ ...baseEmailData, providerEmail: primaryMember.email })
-        .catch(err => console.error('Approval email sending failed:', err))
-
-      // Create calendar events for ALL team members with Google connected
-      await Promise.all(
-        teamMembers.map(async (member) => {
-          if (member.google_calendar_token) {
-            await createCalendarEvent(
+      const calendarResults = await Promise.all(
+        teamMembers
+          .filter(member => member.google_calendar_token)
+          .map(member =>
+            createCalendarEvent(
               member.id,
               {
                 id: booking.id,
@@ -182,10 +169,33 @@ export async function POST(request: Request, { params }: RouteContext) {
                 notes: booking.notes,
               },
               meeting.name
-            ).catch(err => console.error(`Calendar event creation failed for ${member.email}:`, err))
-          }
-        })
+            ).catch(err => {
+              console.error(`Calendar event creation failed for ${member.email}:`, err)
+              return { eventId: null, meetingLink: null }
+            })
+          )
       )
+
+      // Get the meeting link from the first successful calendar event
+      meetingLink = calendarResults.find(r => r.meetingLink)?.meetingLink || null
+      console.log('Calendar events created for approval, meeting link:', meetingLink)
+
+      const baseEmailData = {
+        bookingId: booking.id,
+        managementToken: booking.management_token,
+        meetingName: meeting.name,
+        providerName: displayName,
+        clientName: booking.client_name,
+        clientEmail: booking.client_email,
+        startTime: new Date(booking.start_time),
+        endTime: new Date(booking.end_time),
+        timezone: primaryMember.timezone,
+        meetingLink,
+      }
+
+      // Send approval email to client with meeting link
+      await sendBookingApprovalToClient({ ...baseEmailData, providerEmail: primaryMember.email })
+        .catch(err => console.error('Approval email sending failed:', err))
     }
 
     return NextResponse.json({ success: true })
