@@ -18,10 +18,12 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         aria-checked={checked}
         disabled={disabled}
         className={cn(
-          'peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          'peer h-4 w-4 shrink-0 rounded border transition-colors duration-150 outline-none',
+          'flex items-center justify-center',
+          checked
+            ? 'bg-[#ffffff] border-[#ffffff] text-[#0a0a0a]'
+            : 'bg-transparent border-[#262626] hover:border-[#333333]',
           'disabled:cursor-not-allowed disabled:opacity-50',
-          checked ? 'bg-primary text-primary-foreground' : 'bg-background',
           className
         )}
         onClick={() => !disabled && onCheckedChange?.(!checked)}

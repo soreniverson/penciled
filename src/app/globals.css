@@ -4,27 +4,41 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Neutral dark color palette */
-  --neutral-25: #fafafa;
-  --neutral-50: #f5f5f5;
-  --neutral-100: #e5e5e5;
-  --neutral-200: #d4d4d4;
-  --neutral-300: #a3a3a3;
-  --neutral-400: #737373;
-  --neutral-500: #525252;
-  --neutral-600: #404040;
-  --neutral-700: #262626;
-  --neutral-800: #1a1a1a;
-  --neutral-900: #0f0f0f;
-  --neutral-950: #0a0a0a;
+  /* ===========================================
+     Design System Color Tokens
+     Based on dark-mode minimalist spec
+     =========================================== */
 
-  /* Default to dark mode */
-  --background: var(--neutral-900);
-  --foreground: var(--neutral-50);
-  --surface: var(--neutral-800);
-  --primary: var(--neutral-50);
-  --primary-light: var(--neutral-300);
-  --primary-foreground: var(--neutral-900);
+  /* Backgrounds (darkest to lightest) */
+  --bg-app: #0a0a0a;        /* App background, deepest level */
+  --bg-elevated: #0f0f0f;   /* Card footers, recessed areas */
+  --bg-surface: #141414;    /* Cards, panels, modal backgrounds */
+  --bg-subtle: #1a1a1a;     /* Chips, tags, segmented controls, input backgrounds */
+  --bg-hover: #1f1f1f;      /* Hover states on buttons/interactive elements */
+  --bg-active: #262626;     /* Active/selected states, active tabs */
+
+  /* Borders */
+  --border-subtle: #1a1a1a;   /* Very subtle dividers */
+  --border-default: #1f1f1f;  /* Card borders, dividers */
+  --border-emphasis: #262626; /* Button borders, input borders */
+  --border-strong: #333333;   /* Hover state borders */
+  --border-muted: #2a2a2a;    /* Secondary button borders */
+
+  /* Text */
+  --text-primary: #e5e5e5;    /* Headings, primary content, active tabs */
+  --text-secondary: #d4d4d4;  /* Body text, email content */
+  --text-tertiary: #a3a3a3;   /* Secondary labels, descriptions, muted text */
+  --text-muted: #737373;      /* Timestamps, subtle metadata */
+  --text-disabled: #525252;   /* Placeholder text, disabled states, inactive tabs */
+  --text-faint: #404040;      /* Empty states, very muted hints */
+  --text-ghost: #333333;      /* Disabled button text */
+
+  /* Accent Colors */
+  --accent-primary: #ffffff;           /* Primary CTA buttons (white on dark) */
+  --accent-success: #22c55e;           /* Success states, approve buttons, positive actions */
+  --accent-success-muted: #22c55e66;   /* Success button borders (40% opacity) */
+  --accent-success-bg: #22c55e26;      /* Success button hover background (15% opacity) */
+  --accent-destructive: #dc2626;       /* Destructive actions */
 
   /* Status colors for bookings */
   --status-pending: #f59e0b;
@@ -32,59 +46,102 @@
   --status-cancelled: #ef4444;
   --status-completed: #6366f1;
 
-  /* Component colors */
-  --radius: 0.5rem;
-  --card: var(--neutral-800);
-  --card-foreground: var(--neutral-50);
-  --popover: var(--neutral-800);
-  --popover-foreground: var(--neutral-50);
-  --secondary: var(--neutral-700);
-  --secondary-foreground: var(--neutral-50);
-  --muted: var(--neutral-700);
-  --muted-foreground: var(--neutral-400);
-  --accent: var(--neutral-700);
-  --accent-foreground: var(--neutral-50);
-  --destructive: #dc2626;
-  --destructive-foreground: var(--neutral-50);
-  --border: var(--neutral-700);
-  --input: var(--neutral-700);
-  --ring: var(--neutral-500);
+  /* ===========================================
+     Shadcn/UI Compatible Tokens
+     (mapped from design system)
+     =========================================== */
+
+  --background: var(--bg-app);
+  --foreground: var(--text-primary);
+  --surface: var(--bg-surface);
+
+  --primary: var(--accent-primary);
+  --primary-foreground: var(--bg-app);
+
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+
+  --secondary: var(--bg-active);
+  --secondary-foreground: var(--text-primary);
+
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-muted);
+
+  --accent: var(--bg-hover);
+  --accent-foreground: var(--text-primary);
+
+  --destructive: var(--accent-destructive);
+  --destructive-foreground: var(--text-primary);
+
+  --border: var(--border-default);
+  --input: var(--border-subtle);
+  --ring: var(--text-disabled);
+
+  /* Chart colors */
   --chart-1: #3b82f6;
   --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ec4899;
-  --sidebar: var(--neutral-800);
-  --sidebar-foreground: var(--neutral-50);
-  --sidebar-primary: var(--neutral-50);
-  --sidebar-primary-foreground: var(--neutral-900);
-  --sidebar-accent: var(--neutral-700);
-  --sidebar-accent-foreground: var(--neutral-50);
-  --sidebar-border: var(--neutral-700);
-  --sidebar-ring: var(--neutral-500);
+
+  /* Sidebar (uses design system tokens) */
+  --sidebar: var(--bg-elevated);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--text-primary);
+  --sidebar-primary-foreground: var(--bg-app);
+  --sidebar-accent: var(--bg-hover);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--text-disabled);
+
+  /* Border Radius */
+  --radius-sm: 4px;   /* Small buttons, sub-tabs, badges */
+  --radius-md: 6px;   /* Buttons, inputs, chips */
+  --radius-lg: 8px;   /* Cards, meeting items, metric cards */
+  --radius-xl: 12px;  /* Panels, modals, major cards */
+  --radius-full: 100px; /* Pills, badges, count indicators */
+
+  /* Legacy radius for compatibility */
+  --radius: 8px;
 }
 
 @theme inline {
+  /* Background colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
-  --color-primary: var(--primary);
-  --color-primary-light: var(--primary-light);
-  --color-primary-foreground: var(--primary-foreground);
 
-  /* Neutral colors */
-  --color-neutral-25: var(--neutral-25);
-  --color-neutral-50: var(--neutral-50);
-  --color-neutral-100: var(--neutral-100);
-  --color-neutral-200: var(--neutral-200);
-  --color-neutral-300: var(--neutral-300);
-  --color-neutral-400: var(--neutral-400);
-  --color-neutral-500: var(--neutral-500);
-  --color-neutral-600: var(--neutral-600);
-  --color-neutral-700: var(--neutral-700);
-  --color-neutral-800: var(--neutral-800);
-  --color-neutral-900: var(--neutral-900);
-  --color-neutral-950: var(--neutral-950);
+  --color-bg-app: var(--bg-app);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-active: var(--bg-active);
+
+  /* Border colors */
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-emphasis: var(--border-emphasis);
+  --color-border-strong: var(--border-strong);
+  --color-border-muted: var(--border-muted);
+
+  /* Text colors */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-faint: var(--text-faint);
+  --color-text-ghost: var(--text-ghost);
+
+  /* Accent colors */
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-success: var(--accent-success);
+  --color-accent-success-muted: var(--accent-success-muted);
+  --color-accent-success-bg: var(--accent-success-bg);
 
   /* Status colors */
   --color-status-pending: var(--status-pending);
@@ -92,10 +149,9 @@
   --color-status-cancelled: var(--status-cancelled);
   --color-status-completed: var(--status-completed);
 
-  /* Fonts */
-  --font-sans: var(--font-instrument-sans);
-
-  /* Component colors */
+  /* Shadcn-compatible tokens */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -125,14 +181,18 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Radius */
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  /* Fonts - using system fonts as fallback, TWK Continental can be added */
+  --font-sans: var(--font-instrument-sans);
+
+  /* Radius tokens */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: calc(var(--radius-xl) + 4px);
+  --radius-3xl: calc(var(--radius-xl) + 8px);
+  --radius-4xl: calc(var(--radius-xl) + 12px);
+  --radius-full: var(--radius-full);
 }
 
 @layer base {
@@ -142,7 +202,9 @@
   body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-instrument-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 300;
+    line-height: 1.5;
   }
 }
 
@@ -159,4 +221,22 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 0.8;
+}
+
+/* Custom scrollbar per design spec */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-active);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
 }
