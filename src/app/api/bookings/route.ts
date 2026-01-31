@@ -5,11 +5,14 @@ import {
   sendBookingNotificationToProvider,
   sendBookingRequestToClient,
   sendBookingRequestToProvider,
+  sendConflictOverrideNotification,
 } from '@/lib/email'
-import { parseBody, createBookingSchema } from '@/lib/validations'
+import { parseBody, createBookingWithOverridesSchema, type CreateBookingWithOverridesInput } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createCalendarEvent, getCalendarBusyTimes } from '@/lib/google-calendar'
 import { logApiError } from '@/lib/error-logger'
+import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
+import { assignMembersToBooking } from '@/lib/booking-assignment'
 
 export async function POST(request: Request) {
   try {
@@ -17,9 +20,9 @@ export async function POST(request: Request) {
     const rateLimitResponse = await checkRateLimit(request, 'booking')
     if (rateLimitResponse) return rateLimitResponse
 
-    // Validate request body
-    const { data: body, error: validationError } = await parseBody(request, createBookingSchema)
-    if (validationError) return validationError
+    // Validate request body (now with override support)
+    const parseResult = await parseBody<CreateBookingWithOverridesInput>(request, createBookingWithOverridesSchema)
+    if (parseResult.error) return parseResult.error
 
     const {
       provider_id,
@@ -31,9 +34,46 @@ export async function POST(request: Request) {
       end_time,
       notes,
       booking_link_id,
-    } = body
+      override_availability,
+      override_conflicts,
+      override_reason,
+    } = parseResult.data
 
     const supabase = await createClient()
+
+    // Check if user is authenticated (required for overrides)
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // If override flags are set, verify the user has permission
+    let delegationContext = null
+    let approvedByUserId: string | null = null
+
+    if (override_availability || override_conflicts) {
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Authentication required for override' },
+          { status: 401 }
+        )
+      }
+
+      delegationContext = await getDelegationContext(user.id, provider_id, booking_link_id || null)
+
+      if (override_availability && !hasPermission(delegationContext, 'override_availability')) {
+        return NextResponse.json(
+          { error: 'Not authorized to override availability' },
+          { status: 403 }
+        )
+      }
+
+      if (override_conflicts && !hasPermission(delegationContext, 'override_conflicts')) {
+        return NextResponse.json(
+          { error: 'Not authorized to override conflicts' },
+          { status: 403 }
+        )
+      }
+
+      approvedByUserId = user.id
+    }
 
     // Fetch meeting to get booking mode
     const { data: meetingData } = await supabase
@@ -44,43 +84,65 @@ export async function POST(request: Request) {
 
     const bookingMode = meetingData?.booking_mode || 'instant'
 
-    // Check for conflicts
-    const { data: conflicts } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('provider_id', provider_id)
-      .neq('status', 'cancelled')
-      .lt('start_time', end_time)
-      .gt('end_time', start_time)
-      .limit(1)
+    // Check for conflicts (unless override_conflicts is set)
+    let conflictingBooking: { id: string; client_name: string; client_email: string } | null = null
 
-    if (conflicts && conflicts.length > 0) {
-      return NextResponse.json(
-        { error: 'This time slot is no longer available' },
-        { status: 409 }
-      )
+    if (!override_conflicts) {
+      const { data: conflicts } = await supabase
+        .from('bookings')
+        .select('id, client_name, client_email')
+        .eq('provider_id', provider_id)
+        .neq('status', 'cancelled')
+        .lt('start_time', end_time)
+        .gt('end_time', start_time)
+        .limit(1)
+
+      if (conflicts && conflicts.length > 0) {
+        return NextResponse.json(
+          { error: 'This time slot is no longer available' },
+          { status: 409 }
+        )
+      }
+    } else {
+      // Get conflicting booking info for notification
+      type ConflictResult = { id: string; client_name: string; client_email: string }
+
+      const { data: conflicts } = await supabase
+        .from('bookings')
+        .select('id, client_name, client_email')
+        .eq('provider_id', provider_id)
+        .neq('status', 'cancelled')
+        .lt('start_time', end_time)
+        .gt('end_time', start_time)
+        .limit(1) as { data: ConflictResult[] | null }
+
+      if (conflicts && conflicts.length > 0) {
+        conflictingBooking = conflicts[0]
+      }
     }
 
-    // Check Google Calendar conflicts
-    const busyTimes = await getCalendarBusyTimes(
-      provider_id,
-      new Date(start_time),
-      new Date(end_time)
-    )
-
-    const hasCalendarConflict = busyTimes.some(busy =>
-      new Date(busy.start) < new Date(end_time) && new Date(busy.end) > new Date(start_time)
-    )
-
-    if (hasCalendarConflict) {
-      return NextResponse.json(
-        { error: 'Time slot is no longer available' },
-        { status: 409 }
+    // Check Google Calendar conflicts (unless override_conflicts is set)
+    if (!override_conflicts) {
+      const busyTimes = await getCalendarBusyTimes(
+        provider_id,
+        new Date(start_time),
+        new Date(end_time)
       )
+
+      const hasCalendarConflict = busyTimes.some(busy =>
+        new Date(busy.start) < new Date(end_time) && new Date(busy.end) > new Date(start_time)
+      )
+
+      if (hasCalendarConflict) {
+        return NextResponse.json(
+          { error: 'Time slot is no longer available' },
+          { status: 409 }
+        )
+      }
     }
 
     // Create booking with status based on booking mode
-    const bookingData = {
+    const bookingData: Record<string, unknown> = {
       provider_id,
       meeting_id,
       client_name,
@@ -92,6 +154,18 @@ export async function POST(request: Request) {
       status: bookingMode === 'request' ? 'pending' : 'confirmed',
       booking_link_id: booking_link_id || null,
     }
+
+    // Add override tracking if applicable
+    if (override_availability) {
+      bookingData.availability_override = true
+      bookingData.override_approved_by = approvedByUserId
+      bookingData.override_reason = override_reason || 'Override requested'
+    }
+
+    if (override_conflicts) {
+      bookingData.conflict_override = true
+    }
+
     const { data: booking, error } = await supabase
       .from('bookings')
       // @ts-ignore - Supabase types not inferring correctly
@@ -123,13 +197,13 @@ export async function POST(request: Request) {
     let teamMembers: TeamMember[] = []
     let displayName = ''
 
-    if (booking_link_id) {
-      // Fetch booking link info and all required team members
+    if (booking_link_id && booking) {
+      // Fetch booking link info and members
       const { data: linkData } = await supabase
         .from('booking_links')
-        .select('name')
+        .select('name, min_required_members')
         .eq('id', booking_link_id)
-        .single() as { data: { name: string } | null }
+        .single() as { data: { name: string; min_required_members: number | null } | null }
 
       const { data: members } = await supabase
         .from('booking_link_members')
@@ -146,15 +220,40 @@ export async function POST(request: Request) {
           )
         `)
         .eq('booking_link_id', booking_link_id)
-        .eq('is_required', true)
 
-      if (members) {
-        teamMembers = members
-          .map((m: { providers: TeamMember | TeamMember[] | null }) => {
-            const p = m.providers
-            return Array.isArray(p) ? p[0] : p
-          })
-          .filter((p): p is TeamMember => p !== null)
+      // If min_required_members is set, use flexible assignment
+      if (linkData?.min_required_members !== null && linkData?.min_required_members !== undefined && booking) {
+        // Assign members to this booking (round-robin/load-balanced)
+        const assignedMemberIds = await assignMembersToBooking(
+          booking.id,
+          booking_link_id,
+          new Date(start_time),
+          new Date(end_time),
+          linkData.min_required_members,
+          'round_robin'
+        )
+
+        // Filter to only assigned members
+        if (members) {
+          teamMembers = members
+            .filter((m: { provider_id: string }) => assignedMemberIds.includes(m.provider_id))
+            .map((m: { providers: TeamMember | TeamMember[] | null }) => {
+              const p = m.providers
+              return Array.isArray(p) ? p[0] : p
+            })
+            .filter((p): p is TeamMember => p !== null)
+        }
+      } else {
+        // Legacy behavior: all required members
+        if (members) {
+          teamMembers = members
+            .filter((m: { is_required: boolean }) => m.is_required)
+            .map((m: { providers: TeamMember | TeamMember[] | null }) => {
+              const p = m.providers
+              return Array.isArray(p) ? p[0] : p
+            })
+            .filter((p): p is TeamMember => p !== null)
+        }
       }
 
       displayName = linkData?.name || 'Your team'
@@ -251,6 +350,34 @@ export async function POST(request: Request) {
         )
 
         console.log('All team notifications sent successfully')
+
+        // Send conflict override notification if applicable
+        if (conflictingBooking && override_conflicts && user) {
+          const { data: overrider } = await supabase
+            .from('providers')
+            .select('name')
+            .eq('id', user.id)
+            .single() as { data: { name: string | null } | null }
+
+          const overriderName = overrider?.name || 'A delegate'
+
+          sendConflictOverrideNotification({
+            bookingId: booking.id,
+            managementToken: booking.management_token,
+            meetingName,
+            providerName: displayName,
+            providerEmail: primaryMember.email,
+            clientName: client_name,
+            clientEmail: client_email,
+            startTime: new Date(start_time),
+            endTime: new Date(end_time),
+            timezone: primaryMember.timezone,
+            conflictingBookingId: conflictingBooking.id,
+            conflictingClientName: conflictingBooking.client_name,
+            conflictingClientEmail: conflictingBooking.client_email,
+            overrideByName: overriderName,
+          }).catch(err => console.error('Conflict override notification failed:', err))
+        }
       } catch (err) {
         console.error('Email/calendar error:', err)
         // Don't fail the booking if emails fail

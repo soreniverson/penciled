@@ -1,6 +1,6 @@
 import { createUntypedAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-import { getIntersectionAvailability, getIntersectionAvailableDates } from '@/lib/multi-availability'
+import { getIntersectionAvailability, getIntersectionAvailableDates, getFlexibleIntersectionAvailability } from '@/lib/multi-availability'
 import type { Meeting } from '@/types/database'
 
 export async function GET(request: Request) {
@@ -29,6 +29,7 @@ export async function GET(request: Request) {
         name,
         slug,
         is_active,
+        min_required_members,
         booking_link_members (
           provider_id,
           is_required
@@ -54,6 +55,11 @@ export async function GET(request: Request) {
     const requiredMemberIds = members
       .filter((m: { is_required: boolean }) => m.is_required)
       .map((m: { provider_id: string }) => m.provider_id)
+
+    // Determine minimum required members for "Any N of M" scheduling
+    // If min_required_members is set, use flexible scheduling
+    // Otherwise, all required members must be available (legacy behavior)
+    const minRequired = bookingLink.min_required_members || requiredMemberIds.length || memberIds.length
 
     // Get owner's timezone (used as default)
     const { data: owner } = await supabase
@@ -113,13 +119,25 @@ export async function GET(request: Request) {
 
     const requestedDate = new Date(dateStr)
 
-    const slots = await getIntersectionAvailability(
-      memberIds,
-      requiredMemberIds,
-      requestedDate,
-      meeting as Pick<Meeting, 'duration_minutes' | 'buffer_minutes'>,
-      timezone
-    )
+    // Use flexible scheduling if min_required_members is set
+    const useFlexibleScheduling = bookingLink.min_required_members !== null
+
+    const slots = useFlexibleScheduling
+      ? await getFlexibleIntersectionAvailability(
+          memberIds,
+          requiredMemberIds,
+          minRequired,
+          requestedDate,
+          meeting as Pick<Meeting, 'duration_minutes' | 'buffer_minutes'>,
+          timezone
+        )
+      : await getIntersectionAvailability(
+          memberIds,
+          requiredMemberIds,
+          requestedDate,
+          meeting as Pick<Meeting, 'duration_minutes' | 'buffer_minutes'>,
+          timezone
+        )
 
     // Return only available slots with serializable dates
     const serializedSlots = slots.map(slot => ({

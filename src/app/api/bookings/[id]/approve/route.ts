@@ -5,6 +5,7 @@ import { bookingIdSchema, validateParam } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createCalendarEvent } from '@/lib/google-calendar'
 import { logApiError } from '@/lib/error-logger'
+import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -62,21 +63,15 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
     }
 
-    // Check if user can approve (is provider or team member)
-    let canApprove = booking.provider_id === user.id
+    // Check authorization using delegation context
+    // Approve requires 'view' permission (basic access) since it's approving an incoming request
+    const delegationContext = await getDelegationContext(
+      user.id,
+      booking.provider_id,
+      booking.booking_link_id
+    )
 
-    if (!canApprove && booking.booking_link_id) {
-      const { data: membership } = await supabase
-        .from('booking_link_members')
-        .select('id')
-        .eq('booking_link_id', booking.booking_link_id)
-        .eq('provider_id', user.id)
-        .single()
-
-      canApprove = !!membership
-    }
-
-    if (!canApprove) {
+    if (!hasPermission(delegationContext, 'view')) {
       return NextResponse.json({ error: 'Not authorized to approve this booking' }, { status: 403 })
     }
 

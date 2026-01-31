@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { ZodError, ZodSchema } from 'zod'
 
 export * from './booking'
+export * from './delegate'
+export * from './pool'
+export * from './template'
+export * from './follow-up'
 
 /**
  * Parse and validate request body with Zod schema

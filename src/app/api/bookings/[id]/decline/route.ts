@@ -4,6 +4,7 @@ import { sendBookingDeclinedToClient } from '@/lib/email'
 import { parseBody, providerActionSchema, bookingIdSchema, validateParam } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logApiError } from '@/lib/error-logger'
+import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -35,21 +36,21 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get booking with provider and meeting info
+    // Get booking with provider and meeting info (without provider_id filter)
     const { data: booking } = await supabase
       .from('bookings')
       .select(`
-        id, management_token, provider_id, status,
+        id, management_token, provider_id, booking_link_id, status,
         client_name, client_email, start_time, end_time,
         providers:provider_id (name, business_name, email, timezone),
         meetings:meeting_id (name)
       `)
       .eq('id', id)
-      .eq('provider_id', user.id)
       .single() as { data: {
         id: string
         management_token: string
         provider_id: string
+        booking_link_id: string | null
         status: string
         client_name: string
         client_email: string
@@ -61,6 +62,18 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
+
+    // Check authorization using delegation context
+    // Decline requires 'cancel' permission since it's rejecting a booking
+    const delegationContext = await getDelegationContext(
+      user.id,
+      booking.provider_id,
+      booking.booking_link_id
+    )
+
+    if (!hasPermission(delegationContext, 'cancel')) {
+      return NextResponse.json({ error: 'Not authorized to decline this booking' }, { status: 403 })
     }
 
     if (booking.status !== 'pending') {

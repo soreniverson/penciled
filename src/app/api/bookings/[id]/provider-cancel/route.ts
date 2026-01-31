@@ -5,6 +5,7 @@ import { parseBody, providerActionSchema, bookingIdSchema, validateParam } from 
 import { checkRateLimit } from '@/lib/rate-limit'
 import { deleteCalendarEvent } from '@/lib/google-calendar'
 import { logApiError } from '@/lib/error-logger'
+import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -30,28 +31,28 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     const supabase = await createClient()
 
-    // Verify user is authenticated and owns this booking
+    // Verify user is authenticated
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get booking with provider and meeting info
+    // Get booking with provider and meeting info (without provider_id filter first)
     const { data: booking } = await supabase
       .from('bookings')
       .select(`
-        id, management_token, google_event_id, provider_id,
+        id, management_token, google_event_id, provider_id, booking_link_id,
         client_name, client_email, start_time, end_time,
         providers:provider_id (name, business_name, email, timezone),
         meetings:meeting_id (name)
       `)
       .eq('id', id)
-      .eq('provider_id', user.id)
       .single() as { data: {
         id: string
         management_token: string
         google_event_id: string | null
         provider_id: string
+        booking_link_id: string | null
         client_name: string
         client_email: string
         start_time: string
@@ -62,6 +63,20 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
+
+    // Check authorization using delegation context
+    const delegationContext = await getDelegationContext(
+      user.id,
+      booking.provider_id,
+      booking.booking_link_id
+    )
+
+    if (!hasPermission(delegationContext, 'cancel')) {
+      return NextResponse.json(
+        { error: 'Not authorized to cancel this booking' },
+        { status: 403 }
+      )
     }
 
     // Update booking status

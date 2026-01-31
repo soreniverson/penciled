@@ -1,28 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/page-header'
-import { Calendar, ExternalLink } from 'lucide-react'
-import { format, isToday, isTomorrow } from 'date-fns'
 import type { Booking, Meeting } from '@/types/database'
-import { CopyButton } from '@/components/copy-button'
-import { CancelBookingButton } from './bookings/cancel-button'
-import { CompleteBookingButton } from './bookings/complete-button'
-import { ApproveBookingButton, DeclineBookingButton } from './bookings/approve-button'
+import { BookingsPageClient } from './bookings-page-client'
 
 type BookingWithMeeting = Booking & {
   meetings: Pick<Meeting, 'name' | 'duration_minutes'> | null
 }
 
-function formatBookingDate(date: Date): string {
-  if (isToday(date)) return 'Today'
-  if (isTomorrow(date)) return 'Tomorrow'
-  return format(date, 'EEE, MMM d')
-}
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: SearchParams
+}) {
+  const params = await searchParams
+  const principalId = typeof params.principal === 'string' ? params.principal : null
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -34,7 +28,7 @@ export default async function DashboardPage() {
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  // Run all queries in parallel
+  // Run queries for user's own bookings
   const [providerResult, upcomingResult, pastResult] = await Promise.all([
     supabase
       .from('providers')
@@ -61,120 +55,65 @@ export default async function DashboardPage() {
   ])
 
   const provider = providerResult.data as { slug: string } | null
-  const upcomingBookings = upcomingResult.data
-  const pastBookings = pastResult.data
 
-  const bookingPageUrl = provider?.slug
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/${provider.slug}`
-    : null
+  // If viewing as delegate, fetch principal's bookings
+  let delegateBookings = null
+
+  if (principalId) {
+    type DelegationResult = {
+      permissions: unknown
+      providers: { name: string | null; business_name: string | null } | { name: string | null; business_name: string | null }[] | null
+    }
+
+    // Verify user has delegation rights
+    const { data: delegation } = await supabase
+      .from('delegates')
+      .select('permissions, providers:principal_id (name, business_name)')
+      .eq('principal_id', principalId)
+      .eq('delegate_id', user.id)
+      .single() as { data: DelegationResult | null }
+
+    if (delegation?.permissions) {
+      const [{ data: principalUpcoming }, { data: principalPast }] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select('*, meetings(name, duration_minutes)')
+          .eq('provider_id', principalId)
+          .in('status', ['confirmed', 'pending'])
+          .gte('start_time', now)
+          .order('start_time', { ascending: true })
+          .returns<BookingWithMeeting[]>(),
+        supabase
+          .from('bookings')
+          .select('*, meetings(name, duration_minutes)')
+          .eq('provider_id', principalId)
+          .lt('start_time', now)
+          .gte('start_time', thirtyDaysAgo.toISOString())
+          .order('start_time', { ascending: false })
+          .limit(10)
+          .returns<BookingWithMeeting[]>(),
+      ])
+
+      const principalInfo = Array.isArray(delegation.providers)
+        ? delegation.providers[0]
+        : delegation.providers
+
+      delegateBookings = {
+        principalId,
+        principalName: principalInfo?.business_name || principalInfo?.name || null,
+        upcomingBookings: principalUpcoming || [],
+        pastBookings: principalPast || [],
+      }
+    }
+  }
 
   return (
-    <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Bookings">
-        {bookingPageUrl && (
-          <div className="flex gap-2">
-            <CopyButton text={bookingPageUrl} />
-            <Link href={`/${provider?.slug}`} target="_blank">
-              <Button variant="outline" size="icon">
-                <ExternalLink className="size-4" />
-              </Button>
-            </Link>
-          </div>
-        )}
-      </PageHeader>
-
-      {/* Upcoming Bookings */}
-      <div className="space-y-3">
-        {upcomingBookings && upcomingBookings.length > 0 ? (
-          <div className="space-y-2">
-            {upcomingBookings.map((booking) => {
-              const startDate = new Date(booking.start_time)
-              return (
-                <Card key={booking.id}>
-                  <CardContent className="py-3 px-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="text-center shrink-0 w-14">
-                          <p className="text-xs text-muted-foreground">{formatBookingDate(startDate)}</p>
-                          <p className="text-lg font-semibold">{format(startDate, 'h:mm')}</p>
-                          <p className="text-xs text-muted-foreground">{format(startDate, 'a')}</p>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`size-2 rounded-full shrink-0 ${
-                              booking.status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
-                            }`} />
-                            <p className="font-medium truncate">{booking.client_name}</p>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{booking.meetings?.name}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        {booking.status === 'pending' ? (
-                          <>
-                            <ApproveBookingButton bookingId={booking.id} clientName={booking.client_name} />
-                            <DeclineBookingButton bookingId={booking.id} clientName={booking.client_name} />
-                          </>
-                        ) : (
-                          <CancelBookingButton bookingId={booking.id} clientName={booking.client_name} />
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <Calendar className="size-10 mx-auto mb-3 opacity-50" />
-              <p>No upcoming bookings</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Past Bookings */}
-      {pastBookings && pastBookings.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-medium text-muted-foreground">Past</h2>
-          <div className="space-y-2">
-            {pastBookings.map((booking) => {
-              const startDate = new Date(booking.start_time)
-              return (
-                <Card key={booking.id} className="opacity-60">
-                  <CardContent className="py-3 px-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="text-center shrink-0 w-14">
-                          <p className="text-xs text-muted-foreground">{format(startDate, 'MMM d')}</p>
-                          <p className="text-lg font-semibold">{format(startDate, 'h:mm')}</p>
-                          <p className="text-xs text-muted-foreground">{format(startDate, 'a')}</p>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`size-2 rounded-full shrink-0 ${
-                              booking.status === 'completed' ? 'bg-blue-500' :
-                              booking.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-500'
-                            }`} />
-                            <p className="font-medium truncate">{booking.client_name}</p>
-                            <span className="text-xs text-muted-foreground capitalize">({booking.status})</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{booking.meetings?.name}</p>
-                        </div>
-                      </div>
-                      {booking.status === 'confirmed' && (
-                        <CompleteBookingButton bookingId={booking.id} />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+    <BookingsPageClient
+      userId={user.id}
+      userSlug={provider?.slug || null}
+      upcomingBookings={upcomingResult.data || []}
+      pastBookings={pastResult.data || []}
+      delegateBookings={delegateBookings}
+    />
   )
 }

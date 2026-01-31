@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -23,7 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Loader2 } from 'lucide-react'
-import type { Meeting } from '@/types/database'
+import type { Meeting, MeetingTemplate, Provider } from '@/types/database'
 
 const DURATION_OPTIONS = [
   { value: '15', label: '15 minutes' },
@@ -47,6 +47,13 @@ const BOOKING_MODE_OPTIONS = [
   { value: 'request', label: 'Request booking', description: 'You approve each booking' },
 ]
 
+const VIDEO_PLATFORM_OPTIONS = [
+  { value: 'auto', label: 'Automatic', description: 'Uses Google Meet or Zoom based on your integrations' },
+  { value: 'google_meet', label: 'Google Meet', description: 'Always use Google Meet' },
+  { value: 'zoom', label: 'Zoom', description: 'Always use Zoom' },
+  { value: 'none', label: 'No video', description: 'In-person or phone meetings' },
+]
+
 type Props = {
   providerId: string
   meeting?: Meeting
@@ -63,8 +70,42 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
   const [duration, setDuration] = useState(String(meeting?.duration_minutes || 60))
   const [buffer, setBuffer] = useState(String(meeting?.buffer_minutes || 15))
   const [bookingMode, setBookingMode] = useState<'instant' | 'request'>(meeting?.booking_mode || 'instant')
+  const [videoPlatform, setVideoPlatform] = useState<'auto' | 'google_meet' | 'zoom' | 'none'>(meeting?.video_platform || 'auto')
+  const [templateId, setTemplateId] = useState<string | null>(meeting?.template_id || null)
+
+  // Templates and provider data (fetched client-side)
+  const [templates, setTemplates] = useState<MeetingTemplate[]>([])
+  const [provider, setProvider] = useState<Pick<Provider, 'google_calendar_token' | 'zoom_token'> | null>(null)
 
   const isEditing = !!meeting
+
+  // Fetch templates and provider data when dialog opens
+  useEffect(() => {
+    if (!open) return
+
+    const fetchData = async () => {
+      const supabase = createClient()
+
+      const [{ data: templatesData }, { data: providerData }] = await Promise.all([
+        supabase
+          .from('meeting_templates')
+          .select('id, name')
+          .eq('provider_id', providerId)
+          .eq('is_active', true)
+          .order('name'),
+        supabase
+          .from('providers')
+          .select('google_calendar_token, zoom_token')
+          .eq('id', providerId)
+          .single(),
+      ])
+
+      if (templatesData) setTemplates(templatesData as MeetingTemplate[])
+      if (providerData) setProvider(providerData)
+    }
+
+    fetchData()
+  }, [open, providerId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,6 +126,8 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
             duration_minutes: parseInt(duration),
             buffer_minutes: parseInt(buffer),
             booking_mode: bookingMode,
+            video_platform: videoPlatform,
+            template_id: templateId,
           })
           .eq('id', meeting.id)
       } else {
@@ -98,6 +141,8 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
             duration_minutes: parseInt(duration),
             buffer_minutes: parseInt(buffer),
             booking_mode: bookingMode,
+            video_platform: videoPlatform,
+            template_id: templateId,
           })
       }
 
@@ -110,6 +155,8 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
         setDescription('')
         setDuration('60')
         setBuffer('15')
+        setVideoPlatform('auto')
+        setTemplateId(null)
       }
     } catch (error) {
       console.error('Meeting save error:', error)
@@ -201,6 +248,54 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
                 {bookingMode === 'instant' ? 'Clients are automatically confirmed' : 'You approve each booking request'}
               </p>
             </div>
+            <div className="space-y-2">
+              <Label>Video Platform</Label>
+              <Select value={videoPlatform} onValueChange={(v) => setVideoPlatform(v as typeof videoPlatform)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {VIDEO_PLATFORM_OPTIONS.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      disabled={
+                        (opt.value === 'google_meet' && !provider?.google_calendar_token) ||
+                        (opt.value === 'zoom' && !provider?.zoom_token)
+                      }
+                    >
+                      {opt.label}
+                      {opt.value === 'google_meet' && !provider?.google_calendar_token && ' (not connected)'}
+                      {opt.value === 'zoom' && !provider?.zoom_token && ' (not connected)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {VIDEO_PLATFORM_OPTIONS.find(o => o.value === videoPlatform)?.description}
+              </p>
+            </div>
+            {templates.length > 0 && (
+              <div className="space-y-2">
+                <Label>Meeting Template (optional)</Label>
+                <Select value={templateId || 'none'} onValueChange={(v) => setTemplateId(v === 'none' ? null : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No template</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Apply agenda and notes from a template to bookings
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

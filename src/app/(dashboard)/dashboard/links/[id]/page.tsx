@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, ArrowLeft, Users, Briefcase, Trash2, Copy, Check, ExternalLink } from 'lucide-react'
+import { Loader2, ArrowLeft, Users, Briefcase, Trash2, Copy, Check, ExternalLink, Settings2 } from 'lucide-react'
 import Link from 'next/link'
-import type { Meeting, Provider, BookingLink, BookingLinkMember, BookingLinkMeeting } from '@/types/database'
+import type { Meeting, Provider, BookingLink, BookingLinkMember, BookingLinkMeeting, ResourcePool } from '@/types/database'
 
 type MemberWithProvider = BookingLinkMember & { providers: Provider }
 type MeetingWithData = BookingLinkMeeting & { meetings: Meeting }
@@ -32,6 +32,7 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
   const [bookingLink, setBookingLink] = useState<BookingLinkWithRelations | null>(null)
   const [currentUser, setCurrentUser] = useState<Provider | null>(null)
   const [allMeetings, setAllMeetings] = useState<Meeting[]>([])
+  const [pools, setPools] = useState<ResourcePool[]>([])
 
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -42,6 +43,8 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
   const [members, setMembers] = useState<{ id: string; memberId?: string; email: string; name: string | null; isRequired: boolean }[]>([])
   const [addingMember, setAddingMember] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
+  const [minRequiredMembers, setMinRequiredMembers] = useState<string>('')
+  const [resourcePoolId, setResourcePoolId] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -96,6 +99,8 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
       setSlug(typedLink.slug)
       setDescription(typedLink.description || '')
       setIsActive(typedLink.is_active)
+      setMinRequiredMembers(typedLink.min_required_members ? String(typedLink.min_required_members) : '')
+      setResourcePoolId(typedLink.resource_pool_id || null)
 
       // Set up members
       const memberList = (typedLink.booking_link_members as MemberWithProvider[]).map(m => ({
@@ -111,17 +116,36 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
       const meetingIds = (typedLink.booking_link_meetings as MeetingWithData[]).map(s => s.meeting_id)
       setSelectedMeetings(meetingIds)
 
-      // Load all available meetings
-      const { data: meetingsData } = await supabase
-        .from('meetings')
-        .select('*')
-        .eq('provider_id', user.id)
-        .eq('is_active', true)
-        .order('name')
+      // Load all available meetings and pools
+      const [{ data: meetingsData }, { data: ownedPools }, { data: memberPools }] = await Promise.all([
+        supabase
+          .from('meetings')
+          .select('*')
+          .eq('provider_id', user.id)
+          .eq('is_active', true)
+          .order('name'),
+        supabase
+          .from('resource_pools')
+          .select('id, name')
+          .eq('owner_id', user.id)
+          .eq('is_active', true),
+        supabase
+          .from('resource_pool_members')
+          .select('resource_pools:pool_id (id, name)')
+          .eq('provider_id', user.id)
+          .eq('is_active', true),
+      ])
 
       if (meetingsData) {
         setAllMeetings(meetingsData as Meeting[])
       }
+
+      // Combine owned and member pools
+      const allPools = [
+        ...(ownedPools || []),
+        ...(memberPools?.map(m => m.resource_pools).filter(Boolean) || []),
+      ] as ResourcePool[]
+      setPools(allPools)
 
       setLoading(false)
     }
@@ -298,6 +322,8 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
           slug: slug.trim(),
           description: description.trim() || null,
           is_active: isActive,
+          min_required_members: minRequiredMembers ? parseInt(minRequiredMembers) : null,
+          resource_pool_id: resourcePoolId || null,
         })
         .eq('id', resolvedParams.id)
 
@@ -534,6 +560,64 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
                   </label>
                 ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Advanced Scheduling */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Settings2 className="size-5" />
+              Advanced Scheduling
+            </CardTitle>
+            <CardDescription>
+              Configure flexible scheduling options for this booking link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {members.length > 1 && (
+              <div className="space-y-2">
+                <Label htmlFor="minRequired">Minimum Required Members</Label>
+                <Input
+                  id="minRequired"
+                  type="number"
+                  min={1}
+                  max={members.length}
+                  placeholder={String(members.length)}
+                  value={minRequiredMembers}
+                  onChange={(e) => setMinRequiredMembers(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Book when at least this many team members are available. Leave empty to require all members.
+                </p>
+              </div>
+            )}
+            {pools.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="pool">Resource Pool</Label>
+                <select
+                  id="pool"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={resourcePoolId || ''}
+                  onChange={(e) => setResourcePoolId(e.target.value || null)}
+                >
+                  <option value="">None</option>
+                  {pools.map((pool) => (
+                    <option key={pool.id} value={pool.id}>
+                      {pool.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Assign bookings from a pool of team members instead of specific individuals.
+                </p>
+              </div>
+            )}
+            {members.length <= 1 && pools.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Add more team members or create a resource pool to enable advanced scheduling options.
+              </p>
             )}
           </CardContent>
         </Card>

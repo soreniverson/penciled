@@ -485,6 +485,149 @@ export async function sendCancellationEmailToProvider(data: BookingEmailData & {
   }
 }
 
+// Provider reschedule notification to client
+export async function sendProviderRescheduleNotification(data: BookingEmailData & {
+  oldStartTime: Date
+  oldEndTime: Date
+  reason?: string
+  rescheduledByName?: string
+}) {
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, oldStartTime, oldEndTime, reason, rescheduledByName, meetingLink } = data
+
+  const formattedOldDate = format(oldStartTime, 'EEEE, MMMM d, yyyy')
+  const formattedOldTime = `${format(oldStartTime, 'h:mm a')} - ${format(oldEndTime, 'h:mm a')}`
+  const formattedNewDate = format(startTime, 'EEEE, MMMM d, yyyy')
+  const formattedNewTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
+
+  const rescheduledByText = rescheduledByName && rescheduledByName !== providerName
+    ? ` by ${rescheduledByName} on behalf of ${providerName}`
+    : ` by ${providerName}`
+
+  const meetingLinkHtml = meetingLink ? `
+          <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
+            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+          </div>
+  ` : ''
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: clientEmail,
+      subject: `Booking rescheduled with ${providerName}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Rescheduled</h1>
+
+          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+
+          <p style="margin-bottom: 24px;">Your appointment has been rescheduled${rescheduledByText}.</p>
+
+          <div style="background: #fef3c7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+            <p style="margin: 0 0 12px 0; text-decoration: line-through; color: #92400e;"><strong>Previous:</strong> ${formattedOldDate} at ${formattedOldTime}</p>
+          </div>
+
+          <div style="background: #dcfce7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>New Date:</strong> ${formattedNewDate}</p>
+            <p style="margin: 0 0 12px 0;"><strong>New Time:</strong> ${formattedNewTime}</p>
+            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
+            ${reason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${reason}</p>` : ''}
+          </div>
+
+          ${meetingLinkHtml}
+
+          <p style="margin-bottom: 24px;">
+            Need to make changes?
+            <a href="${manageUrl}" style="color: #1a1a1a;">Manage your booking</a>
+          </p>
+
+          <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;">
+
+          <p style="font-size: 12px; color: #737373;">
+            Powered by <a href="${APP_URL}" style="color: #737373;">penciled.fyi</a>
+          </p>
+        </body>
+        </html>
+      `,
+    })
+    return true
+  } catch (error) {
+    console.error('Failed to send reschedule notification to client:', error)
+    return false
+  }
+}
+
+// Conflict override notification
+export async function sendConflictOverrideNotification(data: BookingEmailData & {
+  conflictingBookingId: string
+  conflictingClientName: string
+  conflictingClientEmail: string
+  overrideByName: string
+}) {
+  const { providerEmail, providerName, clientName, meetingName, startTime, endTime, conflictingClientName, overrideByName } = data
+
+  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const dashboardUrl = `${APP_URL}/dashboard/bookings`
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: providerEmail,
+      subject: `Booking conflict override: ${meetingName}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Conflict Override</h1>
+
+          <p style="margin-bottom: 24px;">Hi ${providerName?.split(' ')[0] || 'there'},</p>
+
+          <p style="margin-bottom: 24px;">${overrideByName} has created a booking that conflicts with an existing meeting.</p>
+
+          <div style="background: #fef2f2; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+            <p style="margin: 0 0 12px 0;"><strong>New Booking:</strong> ${meetingName} with ${clientName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
+            <p style="margin: 0;"><strong>Conflicts with:</strong> Meeting with ${conflictingClientName}</p>
+          </div>
+
+          <p style="margin-bottom: 24px;">
+            Please review your calendar and resolve any scheduling issues.
+          </p>
+
+          <p style="margin-bottom: 16px;">
+            <a href="${dashboardUrl}" style="display: inline-block; background: #1a1a1a; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">View in Dashboard</a>
+          </p>
+
+          <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;">
+
+          <p style="font-size: 12px; color: #737373;">
+            Powered by <a href="${APP_URL}" style="color: #737373;">penciled.fyi</a>
+          </p>
+        </body>
+        </html>
+      `,
+    })
+    return true
+  } catch (error) {
+    console.error('Failed to send conflict override notification:', error)
+    return false
+  }
+}
+
 // Reminder emails
 export async function sendReminderEmailToClient(data: BookingEmailData & { hoursUntil: number }) {
   const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, hoursUntil, meetingLink } = data

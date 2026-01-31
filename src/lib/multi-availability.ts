@@ -177,6 +177,170 @@ export async function getIntersectionAvailability(
 }
 
 /**
+ * Get flexible intersection availability for "Any N of M" scheduling
+ * Returns slots where at least minRequired members are available
+ *
+ * OPTIMIZED: Uses batched queries
+ */
+export async function getFlexibleIntersectionAvailability(
+  memberIds: string[],
+  requiredMemberIds: string[],
+  minRequired: number,
+  date: Date,
+  meeting: Pick<Meeting, 'duration_minutes' | 'buffer_minutes'>,
+  timezone: string
+): Promise<TimeSlot[]> {
+  const supabase = createAdminClient()
+  const zonedDate = toZonedTime(date, timezone)
+  const dayStart = startOfDay(zonedDate)
+  const dayEnd = endOfDay(zonedDate)
+  const dateStr = format(zonedDate, 'yyyy-MM-dd')
+  const dayOfWeek = getDay(zonedDate)
+
+  // OPTIMIZATION: Batch all queries instead of N+1 queries per member
+  const [
+    availabilityData,
+    blackoutsData,
+    providersData,
+    bookingsByProvider,
+  ] = await Promise.all([
+    supabase
+      .from('availability')
+      .select('provider_id, day_of_week, start_time, end_time')
+      .in('provider_id', memberIds)
+      .eq('is_active', true),
+
+    supabase
+      .from('blackout_dates')
+      .select('provider_id, start_date, end_date')
+      .in('provider_id', memberIds)
+      .lte('start_date', dateStr)
+      .gte('end_date', dateStr),
+
+    supabase
+      .from('providers')
+      .select('id, google_calendar_token')
+      .in('id', memberIds),
+
+    getBookingsForProviders(memberIds, dayStart, dayEnd),
+  ])
+
+  // Get calendar busy times for members who have it connected (CACHED)
+  const membersWithCalendar = (providersData.data || [])
+    .filter((p: { id: string; google_calendar_token: unknown }) => p.google_calendar_token)
+    .map((p: { id: string }) => p.id)
+
+  const busyTimesByProvider = membersWithCalendar.length > 0
+    ? await getCalendarBusyTimesForProviders(membersWithCalendar, dayStart, dayEnd)
+    : new Map<string, { start: Date; end: Date }[]>()
+
+  // Group data by provider
+  const membersData: MemberAvailability[] = memberIds.map(providerId => {
+    const isRequired = requiredMemberIds.includes(providerId)
+
+    const availabilityRules = (availabilityData.data || [])
+      .filter((r: { provider_id: string }) => r.provider_id === providerId)
+      .map((r: { day_of_week: number; start_time: string; end_time: string }) => ({
+        day_of_week: r.day_of_week,
+        start_time: r.start_time,
+        end_time: r.end_time,
+      }))
+
+    const blackoutDates = (blackoutsData.data || [])
+      .filter((b: { provider_id: string }) => b.provider_id === providerId)
+      .map((b: { start_date: string; end_date: string }) => ({
+        start_date: b.start_date,
+        end_date: b.end_date,
+      }))
+
+    const bookings = bookingsByProvider.get(providerId) || []
+    const busyTimes = busyTimesByProvider.get(providerId) || []
+
+    return {
+      providerId,
+      isRequired,
+      availabilityRules,
+      bookings,
+      busyTimes,
+      blackoutDates,
+    }
+  })
+
+  // Check if any required member is blacked out on this day
+  const requiredMembers = membersData.filter(m => m.isRequired)
+  for (const member of requiredMembers) {
+    if (member.blackoutDates.length > 0) {
+      return []
+    }
+  }
+
+  // Generate slots for each member
+  const memberSlots = new Map<string, Set<number>>()
+
+  for (const member of membersData) {
+    // Skip members who are blacked out
+    if (member.blackoutDates.length > 0) continue
+
+    const memberRules = member.availabilityRules.filter(r => r.day_of_week === dayOfWeek)
+    if (memberRules.length === 0) continue
+
+    const slots = generateTimeSlots(
+      zonedDate,
+      member.availabilityRules,
+      meeting,
+      member.bookings,
+      timezone,
+      2,
+      member.busyTimes
+    )
+
+    const availableStarts = new Set(
+      slots.filter(s => s.available).map(s => s.start.getTime())
+    )
+
+    memberSlots.set(member.providerId, availableStarts)
+  }
+
+  // Find the union of all slots (all unique start times)
+  const allStartTimes = new Set<number>()
+  for (const slots of memberSlots.values()) {
+    for (const start of slots) {
+      allStartTimes.add(start)
+    }
+  }
+
+  // For each slot, count how many members are available
+  const resultSlots: TimeSlot[] = []
+
+  for (const startTime of Array.from(allStartTimes).sort((a, b) => a - b)) {
+    // Count available members (required must all be available)
+    let requiredAvailable = 0
+    let totalAvailable = 0
+
+    for (const member of membersData) {
+      const slots = memberSlots.get(member.providerId)
+      if (slots?.has(startTime)) {
+        totalAvailable++
+        if (member.isRequired) requiredAvailable++
+      }
+    }
+
+    // Check if all required members are available
+    const allRequiredAvailable = requiredAvailable === requiredMembers.length
+
+    // Slot is available if all required members are available AND at least minRequired total
+    const available = allRequiredAvailable && totalAvailable >= minRequired
+
+    const start = new Date(startTime)
+    const end = new Date(startTime + meeting.duration_minutes * 60 * 1000)
+
+    resultSlots.push({ start, end, available })
+  }
+
+  return resultSlots
+}
+
+/**
  * Get available dates for multi-person booking
  *
  * OPTIMIZED: Uses batched queries

@@ -2,8 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Check, X, Calendar } from 'lucide-react'
+import { Check, X, Calendar, Video } from 'lucide-react'
 import { DisconnectGoogleCalendarButton } from './disconnect-button'
+import { DisconnectZoomButton } from './disconnect-zoom-button'
 import type { Provider } from '@/types/database'
 
 type SearchParams = Promise<{ success?: string; error?: string }>
@@ -23,12 +24,13 @@ export default async function IntegrationsPage({
 
   const { data: provider } = await supabase
     .from('providers')
-    .select('google_calendar_token')
+    .select('google_calendar_token, zoom_token')
     .eq('id', user.id)
     .single()
-    .then(res => ({ ...res, data: res.data as Pick<Provider, 'google_calendar_token'> | null }))
+    .then(res => ({ ...res, data: res.data as Pick<Provider, 'google_calendar_token' | 'zoom_token'> | null }))
 
   const isGoogleConnected = !!provider?.google_calendar_token
+  const isZoomConnected = !!provider?.zoom_token
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
@@ -49,10 +51,23 @@ export default async function IntegrationsPage({
           Google Calendar disconnected.
         </div>
       )}
+      {params.success === 'zoom_connected' && (
+        <div className="p-4 bg-green-50 text-green-800 rounded-lg flex items-center gap-2">
+          <Check className="size-5" />
+          Zoom connected successfully!
+        </div>
+      )}
+      {params.success === 'zoom_disconnected' && (
+        <div className="p-4 bg-muted text-muted-foreground rounded-lg flex items-center gap-2">
+          <Check className="size-5" />
+          Zoom disconnected.
+        </div>
+      )}
       {params.error && (
         <div className="p-4 bg-destructive/10 text-destructive rounded-lg flex items-center gap-2">
           <X className="size-5" />
           {params.error === 'google_denied' && 'Google Calendar access was denied.'}
+          {params.error === 'zoom_denied' && 'Zoom access was denied.'}
           {params.error === 'invalid_request' && 'Invalid request. Please try again.'}
           {params.error === 'invalid_state' && 'Session expired. Please try again.'}
           {params.error === 'save_failed' && 'Failed to save connection. Please try again.'}
@@ -115,6 +130,51 @@ export default async function IntegrationsPage({
                     />
                   </svg>
                   Connect Google Calendar
+                </Button>
+              </form>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Zoom */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Video className="size-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Zoom</CardTitle>
+              <CardDescription>
+                Create Zoom meetings automatically for bookings
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isZoomConnected ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <Check className="size-4" />
+                Connected
+              </div>
+              <DisconnectZoomButton />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Connect Zoom to:
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li>Automatically create Zoom meetings for bookings</li>
+                <li>Send Zoom links to clients</li>
+                <li>Use Zoom for external meetings (different email domains)</li>
+              </ul>
+              <form action="/api/auth/zoom" method="GET">
+                <Button type="submit">
+                  <Video className="mr-2 size-4" />
+                  Connect Zoom
                 </Button>
               </form>
             </div>

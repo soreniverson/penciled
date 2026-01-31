@@ -380,6 +380,66 @@ export function SettingsForm({ provider: initialProvider }: Props) {
         </CardContent>
       </Card>
 
+      {/* Delegates Link */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Delegates</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Allow assistants or team members to manage your bookings on your behalf.
+          </p>
+          <Link href="/dashboard/settings/delegates">
+            <Button variant="outline">Manage Delegates</Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Resource Pools Link */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Resource Pools</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Create pools of team members for flexible scheduling across a group.
+          </p>
+          <Link href="/dashboard/pools">
+            <Button variant="outline">Manage Pools</Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Meeting Templates Link */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Meeting Templates</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Create reusable templates with agendas and notes for your meetings.
+          </p>
+          <Link href="/dashboard/templates">
+            <Button variant="outline">Manage Templates</Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Follow-up Templates Link */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Follow-up Templates</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Automatically send follow-up emails or feedback requests after meetings.
+          </p>
+          <Link href="/dashboard/follow-up-templates">
+            <Button variant="outline">Manage Follow-ups</Button>
+          </Link>
+        </CardContent>
+      </Card>
+
       {/* Sign Out */}
       <div className="pt-4">
         <form action="/api/auth/logout" method="POST">
