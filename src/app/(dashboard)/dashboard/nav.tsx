@@ -1,26 +1,26 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import {
   Calendar,
   Clock,
   Settings,
   Briefcase,
-  Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const navItems = [
-  { href: '/dashboard', label: 'Bookings', icon: Calendar },
-  { href: '/dashboard/meetings', label: 'Meetings', icon: Briefcase },
-  { href: '/dashboard/availability', label: 'Availability', icon: Clock },
-  { href: '/dashboard/links', label: 'Team', icon: Users },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard', label: 'Bookings', icon: Calendar, shortcut: 'b' },
+  { href: '/dashboard/meetings', label: 'Meetings', icon: Briefcase, shortcut: 'm' },
+  { href: '/dashboard/availability', label: 'Availability', icon: Clock, shortcut: 'a' },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings, shortcut: 's' },
 ]
 
 export function DashboardNav() {
   const pathname = usePathname()
+  const router = useRouter()
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -28,6 +28,28 @@ export function DashboardNav() {
     }
     return pathname.startsWith(href)
   }
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input or textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+      // Don't trigger with modifier keys
+      if (e.metaKey || e.ctrlKey || e.altKey) {
+        return
+      }
+
+      const item = navItems.find(item => item.shortcut === e.key.toLowerCase())
+      if (item) {
+        router.push(item.href)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [router])
 
   return (
     <nav className="flex items-center gap-1 sm:gap-1 bg-neutral-900 sm:bg-transparent border border-neutral-800 sm:border-0 rounded-full sm:rounded-none px-2 py-1.5 sm:p-0 shadow-lg sm:shadow-none">

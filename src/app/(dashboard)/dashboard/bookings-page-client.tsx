@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/page-header'
-import { Calendar, ExternalLink, Plus, AlertCircle } from 'lucide-react'
+import { Calendar, ExternalLink, Zap, AlertCircle } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
 import type { Booking, Meeting } from '@/types/database'
 import { CopyButton } from '@/components/copy-button'
@@ -63,7 +63,7 @@ export function BookingsPageClient({
         <div className="flex gap-2">
           <QuickBookDialog providerId={userId} principalId={isViewingPrincipal ? principalId : null}>
             <Button variant="outline" size="sm">
-              <Plus className="size-4 mr-1" />
+              <Zap className="size-4 mr-1" />
               Quick Book
             </Button>
           </QuickBookDialog>
@@ -101,19 +101,16 @@ export function BookingsPageClient({
                   <CardContent className="py-3 px-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="text-center shrink-0 w-14">
-                          <p className="text-xs text-muted-foreground">{formatBookingDate(startDate)}</p>
-                          <p className="text-lg font-semibold">{format(startDate, 'h:mm')}</p>
-                          <p className="text-xs text-muted-foreground">{format(startDate, 'a')}</p>
+                        <div className="text-center shrink-0 w-16">
+                          <p className="text-xs text-muted-foreground leading-tight">{formatBookingDate(startDate)}</p>
+                          <p className="text-lg font-semibold leading-tight">{format(startDate, 'h:mm a')}</p>
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`size-2 rounded-full shrink-0 ${
-                              booking.status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
-                            }`} />
-                            <p className="font-medium truncate">{booking.client_name}</p>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{booking.meetings?.name}</p>
+                        <div className="min-w-0 flex flex-col justify-center">
+                          <p className="font-medium truncate leading-tight">{booking.client_name}</p>
+                          <p className="text-sm text-muted-foreground truncate leading-tight">
+                            {booking.meetings?.name}
+                            {booking.status === 'pending' && <span className="text-yellow-500 ml-2">(pending)</span>}
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
@@ -154,21 +151,20 @@ export function BookingsPageClient({
                   <CardContent className="py-3 px-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="text-center shrink-0 w-14">
-                          <p className="text-xs text-muted-foreground">{format(startDate, 'MMM d')}</p>
-                          <p className="text-lg font-semibold">{format(startDate, 'h:mm')}</p>
-                          <p className="text-xs text-muted-foreground">{format(startDate, 'a')}</p>
+                        <div className="text-center shrink-0 w-16">
+                          <p className="text-xs text-muted-foreground leading-tight">{format(startDate, 'MMM d')}</p>
+                          <p className="text-lg font-semibold leading-tight">{format(startDate, 'h:mm a')}</p>
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`size-2 rounded-full shrink-0 ${
-                              booking.status === 'completed' ? 'bg-blue-500' :
-                              booking.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-500'
-                            }`} />
-                            <p className="font-medium truncate">{booking.client_name}</p>
-                            <span className="text-xs text-muted-foreground capitalize">({booking.status})</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{booking.meetings?.name}</p>
+                        <div className="min-w-0 flex flex-col justify-center">
+                          <p className="font-medium truncate leading-tight">{booking.client_name}</p>
+                          <p className="text-sm text-muted-foreground truncate leading-tight">
+                            {booking.meetings?.name}
+                            {booking.status !== 'confirmed' && (
+                              <span className={`ml-2 ${booking.status === 'cancelled' ? 'text-red-500' : ''}`}>
+                                ({booking.status})
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                       {booking.status === 'confirmed' && (

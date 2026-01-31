@@ -86,10 +86,6 @@ function LoginContent() {
   if (step === 'requested') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <Link href="/" className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">penciled.fyi</h1>
-        </Link>
-
         <Card className="w-full max-w-sm">
           <CardContent className="pt-6 text-center">
             <div className="size-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
@@ -114,10 +110,6 @@ function LoginContent() {
   if (step === 'signin') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <Link href="/" className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">penciled.fyi</h1>
-        </Link>
-
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <CardTitle>Welcome</CardTitle>
@@ -171,10 +163,6 @@ function LoginContent() {
   if (step === 'request') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <Link href="/" className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">penciled.fyi</h1>
-        </Link>
-
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <CardTitle>Join the waitlist</CardTitle>
@@ -219,16 +207,9 @@ function LoginContent() {
   // Email entry (default)
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-      <Link href="/" className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">penciled.fyi</h1>
-      </Link>
-
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle>Get started</CardTitle>
-          <CardDescription>
-            Enter your email to continue
-          </CardDescription>
+          <CardTitle>Enter your email</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
@@ -238,8 +219,7 @@ function LoginContent() {
           )}
 
           <form onSubmit={handleCheckEmail} className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div>
               <Input
                 id="email"
                 type="email"

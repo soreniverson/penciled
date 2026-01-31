@@ -317,6 +317,13 @@ export function SettingsForm({ provider: initialProvider }: Props) {
               <ChevronRight className="size-4 text-[#525252]" />
             </Link>
             <Link
+              href="/dashboard/links"
+              className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
+            >
+              <span className="text-sm">Team</span>
+              <ChevronRight className="size-4 text-[#525252]" />
+            </Link>
+            <Link
               href="/dashboard/settings/delegates"
               className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
             >

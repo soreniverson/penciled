@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -275,9 +275,6 @@ export default function OnboardingPage() {
           <Card>
             <CardHeader>
               <CardTitle>Tell us about your business</CardTitle>
-              <CardDescription>
-                This helps us personalize your booking page.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -328,9 +325,6 @@ export default function OnboardingPage() {
           <Card>
             <CardHeader>
               <CardTitle>Create your first meeting</CardTitle>
-              <CardDescription>
-                What type of meeting do you offer? You can add more later.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -366,9 +360,6 @@ export default function OnboardingPage() {
           <Card>
             <CardHeader>
               <CardTitle>Set your availability</CardTitle>
-              <CardDescription>
-                When can clients book appointments with you?
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {DAYS.map((day) => (
@@ -417,9 +408,6 @@ export default function OnboardingPage() {
           <Card>
             <CardHeader>
               <CardTitle>Choose your booking URL</CardTitle>
-              <CardDescription>
-                This is the link you&apos;ll share with clients.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">

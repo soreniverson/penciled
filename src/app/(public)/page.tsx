@@ -21,9 +21,6 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
-          <p className="text-sm text-muted-foreground mt-8">
-            Free to use. No credit card required.
-          </p>
         </div>
       </main>
 
