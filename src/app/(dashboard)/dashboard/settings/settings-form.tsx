@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select'
 import { generateSlug } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
-import { Loader2, Check, ExternalLink, LogOut, Upload, X, ImageIcon, ChevronRight } from 'lucide-react'
+import { Loader2, Check, ExternalLink, LogOut, X, ImageIcon, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import type { Provider } from '@/types/database'
 
@@ -192,7 +192,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
           <CardTitle className="text-base">Account</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -211,17 +211,17 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 className="bg-muted"
               />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="businessName">Business name</Label>
+              <Label htmlFor="businessName">Company</Label>
               <Input
                 id="businessName"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Your business name"
+                placeholder="Company name"
               />
             </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="timezone">Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
@@ -237,91 +237,68 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Label className="shrink-0">Logo</Label>
-            {logoUrl ? (
-              <div className="relative">
-                <img
-                  src={logoUrl}
-                  alt="Business logo"
-                  className="size-10 rounded-lg object-contain bg-muted"
-                />
-                <button
-                  type="button"
-                  onClick={handleLogoRemove}
-                  disabled={uploadingLogo}
-                  className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
-                >
-                  <X className="size-2.5" />
-                </button>
-              </div>
-            ) : (
-              <div className="size-10 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
-                <ImageIcon className="size-4 text-muted-foreground/50" />
-              </div>
-            )}
-            <label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                disabled={uploadingLogo}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploadingLogo}
-                asChild
-              >
-                <span className="cursor-pointer">
-                  {uploadingLogo ? (
-                    <Loader2 className="size-4 mr-1 animate-spin" />
-                  ) : (
-                    <Upload className="size-4 mr-1" />
-                  )}
-                  {logoUrl ? 'Change' : 'Upload'}
+            <div className="space-y-2">
+              <Label htmlFor="slug">Link</Label>
+              <div className="flex items-center gap-0">
+                <span className="px-2 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
+                  penciled.fyi/
                 </span>
-              </Button>
-            </label>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Booking Page */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Booking link</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-0 flex-1">
-              <span className="px-3 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
-                penciled.fyi/
-              </span>
-              <Input
-                id="slug"
-                className="rounded-l-none"
-                value={slug}
-                onChange={(e) => setSlug(generateSlug(e.target.value))}
-              />
+                <Input
+                  id="slug"
+                  className="rounded-l-none"
+                  value={slug}
+                  onChange={(e) => setSlug(generateSlug(e.target.value))}
+                />
+                {slug && (
+                  <Link href={`/${slug}`} target="_blank" className="ml-1">
+                    <Button variant="ghost" size="icon" className="shrink-0 size-9">
+                      <ExternalLink className="size-4" />
+                    </Button>
+                  </Link>
+                )}
+              </div>
+              {!checkingSlug && slugAvailable === false && (
+                <p className="text-xs text-destructive">Taken</p>
+              )}
             </div>
-            {slug && (
-              <Link href={`/${slug}`} target="_blank">
-                <Button variant="outline" size="icon" className="shrink-0">
-                  <ExternalLink className="size-4" />
-                </Button>
-              </Link>
-            )}
+            <div className="space-y-2">
+              <Label>Logo</Label>
+              <label className="block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={uploadingLogo || !!logoUrl}
+                  className="hidden"
+                />
+                {logoUrl ? (
+                  <div className="relative group size-10 cursor-default">
+                    <img
+                      src={logoUrl}
+                      alt="Logo"
+                      className="size-10 rounded-lg object-contain bg-muted"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); handleLogoRemove(); }}
+                      disabled={uploadingLogo}
+                      className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    >
+                      <X className="size-4 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="size-10 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors">
+                    {uploadingLogo ? (
+                      <Loader2 className="size-4 text-muted-foreground/50 animate-spin" />
+                    ) : (
+                      <ImageIcon className="size-4 text-muted-foreground/50" />
+                    )}
+                  </div>
+                )}
+              </label>
+            </div>
           </div>
-          {checkingSlug && (
-            <p className="text-sm text-muted-foreground">Checking...</p>
-          )}
-          {!checkingSlug && slugAvailable === false && (
-            <p className="text-sm text-destructive">This URL is taken</p>
-          )}
         </CardContent>
       </Card>
 
