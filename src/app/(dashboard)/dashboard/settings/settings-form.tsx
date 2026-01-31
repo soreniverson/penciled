@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -193,8 +192,8 @@ export function SettingsForm({ provider: initialProvider }: Props) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
               <Input
                 id="name"
                 value={name}
@@ -202,8 +201,8 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 placeholder="Your name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
               <Input
                 id="email"
                 value={initialProvider.email || ''}
@@ -211,8 +210,8 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 className="bg-muted"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Company</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="businessName" className="text-xs text-muted-foreground">Company</Label>
               <Input
                 id="businessName"
                 value={businessName}
@@ -222,10 +221,10 @@ export function SettingsForm({ provider: initialProvider }: Props) {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="timezone" className="text-xs text-muted-foreground">Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -237,23 +236,23 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="slug">Link</Label>
-              <div className="flex items-center gap-0">
-                <span className="px-2 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
-                  penciled.fyi/
-                </span>
-                <Input
-                  id="slug"
-                  className="rounded-l-none"
-                  value={slug}
-                  onChange={(e) => setSlug(generateSlug(e.target.value))}
-                />
+            <div className="space-y-1.5">
+              <Label htmlFor="slug" className="text-xs text-muted-foreground">Link</Label>
+              <div className="relative">
+                <div className="flex items-center">
+                  <span className="px-2 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground shrink-0">
+                    penciled.fyi/
+                  </span>
+                  <Input
+                    id="slug"
+                    className="rounded-l-none pr-9"
+                    value={slug}
+                    onChange={(e) => setSlug(generateSlug(e.target.value))}
+                  />
+                </div>
                 {slug && (
-                  <Link href={`/${slug}`} target="_blank" className="ml-1">
-                    <Button variant="ghost" size="icon" className="shrink-0 size-9">
-                      <ExternalLink className="size-4" />
-                    </Button>
+                  <Link href={`/${slug}`} target="_blank" className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <ExternalLink className="size-4 text-muted-foreground hover:text-foreground transition-colors" />
                   </Link>
                 )}
               </div>
@@ -261,8 +260,8 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 <p className="text-xs text-destructive">Taken</p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label>Logo</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Logo</Label>
               <label className="block">
                 <input
                   type="file"
