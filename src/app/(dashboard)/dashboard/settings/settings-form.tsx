@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { generateSlug } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
-import { Loader2, Check, ExternalLink, LogOut, Upload, X, ImageIcon } from 'lucide-react'
+import { Loader2, Check, ExternalLink, LogOut, Upload, X, ImageIcon, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import type { Provider } from '@/types/database'
 
@@ -368,75 +368,64 @@ export function SettingsForm({ provider: initialProvider }: Props) {
         </CardContent>
       </Card>
 
-      {/* Integrations Link */}
+      {/* More Settings */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Integrations</CardTitle>
+          <CardTitle className="text-base">More</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Link href="/dashboard/settings/integrations">
-            <Button variant="outline">Manage Integrations</Button>
-          </Link>
-        </CardContent>
-      </Card>
-
-      {/* Delegates Link */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Delegates</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Allow assistants or team members to manage your bookings on your behalf.
-          </p>
-          <Link href="/dashboard/settings/delegates">
-            <Button variant="outline">Manage Delegates</Button>
-          </Link>
-        </CardContent>
-      </Card>
-
-      {/* Resource Pools Link */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Resource Pools</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Create pools of team members for flexible scheduling across a group.
-          </p>
-          <Link href="/dashboard/pools">
-            <Button variant="outline">Manage Pools</Button>
-          </Link>
-        </CardContent>
-      </Card>
-
-      {/* Meeting Templates Link */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Meeting Templates</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Create reusable templates with agendas and notes for your meetings.
-          </p>
-          <Link href="/dashboard/templates">
-            <Button variant="outline">Manage Templates</Button>
-          </Link>
-        </CardContent>
-      </Card>
-
-      {/* Follow-up Templates Link */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Follow-up Templates</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Automatically send follow-up emails or feedback requests after meetings.
-          </p>
-          <Link href="/dashboard/follow-up-templates">
-            <Button variant="outline">Manage Follow-ups</Button>
-          </Link>
+        <CardContent className="p-0">
+          <nav className="flex flex-col">
+            <Link
+              href="/dashboard/settings/integrations"
+              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+            >
+              <div>
+                <p className="font-medium text-sm">Integrations</p>
+                <p className="text-xs text-muted-foreground">Google Calendar, Zoom</p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <Link
+              href="/dashboard/settings/delegates"
+              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+            >
+              <div>
+                <p className="font-medium text-sm">Delegates</p>
+                <p className="text-xs text-muted-foreground">Let others manage your bookings</p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <Link
+              href="/dashboard/pools"
+              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+            >
+              <div>
+                <p className="font-medium text-sm">Resource Pools</p>
+                <p className="text-xs text-muted-foreground">Team scheduling groups</p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <Link
+              href="/dashboard/templates"
+              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+            >
+              <div>
+                <p className="font-medium text-sm">Meeting Templates</p>
+                <p className="text-xs text-muted-foreground">Reusable agendas and notes</p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <Link
+              href="/dashboard/follow-up-templates"
+              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors"
+            >
+              <div>
+                <p className="font-medium text-sm">Follow-up Templates</p>
+                <p className="text-xs text-muted-foreground">Automated post-meeting emails</p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+          </nav>
         </CardContent>
       </Card>
 
