@@ -13,8 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
 import { generateSlug } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
 import { Loader2, Check, ExternalLink, LogOut, Upload, X, ImageIcon, ChevronRight } from 'lucide-react'
@@ -50,7 +48,6 @@ export function SettingsForm({ provider: initialProvider }: Props) {
   const [businessName, setBusinessName] = useState(initialProvider.business_name || '')
   const [slug, setSlug] = useState(initialProvider.slug || '')
   const [timezone, setTimezone] = useState(initialProvider.timezone || '')
-  const [collectPhone, setCollectPhone] = useState(initialProvider.collect_phone ?? false)
   const [logoUrl, setLogoUrl] = useState<string | null>(initialProvider.logo_url || null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(true)
@@ -102,7 +99,6 @@ export function SettingsForm({ provider: initialProvider }: Props) {
           business_name: businessName || null,
           slug: slug || null,
           timezone,
-          collect_phone: collectPhone,
         })
         .eq('id', initialProvider.id)
 
@@ -115,7 +111,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
     } finally {
       setSaving(false)
     }
-  }, [name, businessName, slug, timezone, collectPhone, slugAvailable, initialProvider.id])
+  }, [name, businessName, slug, timezone, slugAvailable, initialProvider.id])
 
   // Auto-save on changes (debounced)
   useEffect(() => {
@@ -127,7 +123,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
     }, 800)
 
     return () => clearTimeout(timeout)
-  }, [name, businessName, slug, timezone, collectPhone, saveSettings, slugAvailable])
+  }, [name, businessName, slug, timezone, saveSettings, slugAvailable])
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -181,8 +177,6 @@ export function SettingsForm({ provider: initialProvider }: Props) {
     }
   }
 
-  const bookingUrl = slug ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${slug}` : null
-
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
       <PageHeader title="Settings">
@@ -198,105 +192,100 @@ export function SettingsForm({ provider: initialProvider }: Props) {
           <CardTitle className="text-base">Account</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              value={initialProvider.email || ''}
-              disabled
-              className="bg-muted"
-            />
-            <p className="text-xs text-muted-foreground">
-              Email cannot be changed
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="timezone">Timezone</Label>
-            <Select value={timezone} onValueChange={setTimezone}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_TIMEZONES.map((tz) => (
-                  <SelectItem key={tz} value={tz}>
-                    {tz.replace(/_/g, ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Separator />
-          <div className="space-y-2">
-            <Label htmlFor="businessName">Business name</Label>
-            <Input
-              id="businessName"
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="Your business name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Logo</Label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Displayed on your booking page. Max 2MB.
-            </p>
-            <div className="flex items-center gap-4">
-              {logoUrl ? (
-                <div className="relative">
-                  <img
-                    src={logoUrl}
-                    alt="Business logo"
-                    className="size-16 rounded-lg object-contain bg-muted"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleLogoRemove}
-                    disabled={uploadingLogo}
-                    className="absolute -top-2 -right-2 size-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </div>
-              ) : (
-                <div className="size-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
-                  <ImageIcon className="size-6 text-muted-foreground/50" />
-                </div>
-              )}
-              <label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  disabled={uploadingLogo}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={uploadingLogo}
-                  asChild
-                >
-                  <span className="cursor-pointer">
-                    {uploadingLogo ? (
-                      <Loader2 className="size-4 mr-2 animate-spin" />
-                    ) : (
-                      <Upload className="size-4 mr-2" />
-                    )}
-                    {logoUrl ? 'Change' : 'Upload'}
-                  </span>
-                </Button>
-              </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+              />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                value={initialProvider.email || ''}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="businessName">Business name</Label>
+              <Input
+                id="businessName"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="Your business name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Timezone</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      {tz.replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Label className="shrink-0">Logo</Label>
+            {logoUrl ? (
+              <div className="relative">
+                <img
+                  src={logoUrl}
+                  alt="Business logo"
+                  className="size-10 rounded-lg object-contain bg-muted"
+                />
+                <button
+                  type="button"
+                  onClick={handleLogoRemove}
+                  disabled={uploadingLogo}
+                  className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+                >
+                  <X className="size-2.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="size-10 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                <ImageIcon className="size-4 text-muted-foreground/50" />
+              </div>
+            )}
+            <label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploadingLogo}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingLogo}
+                asChild
+              >
+                <span className="cursor-pointer">
+                  {uploadingLogo ? (
+                    <Loader2 className="size-4 mr-1 animate-spin" />
+                  ) : (
+                    <Upload className="size-4 mr-1" />
+                  )}
+                  {logoUrl ? 'Change' : 'Upload'}
+                </span>
+              </Button>
+            </label>
           </div>
         </CardContent>
       </Card>
@@ -306,10 +295,9 @@ export function SettingsForm({ provider: initialProvider }: Props) {
         <CardHeader>
           <CardTitle className="text-base">Booking link</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="slug">URL</Label>
-            <div className="flex items-center gap-0">
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0 flex-1">
               <span className="px-3 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
                 penciled.fyi/
               </span>
@@ -320,42 +308,20 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 onChange={(e) => setSlug(generateSlug(e.target.value))}
               />
             </div>
-            {checkingSlug && (
-              <p className="text-sm text-muted-foreground">Checking availability...</p>
-            )}
-            {!checkingSlug && slugAvailable === true && slug && (
-              <p className="text-sm text-green-600">This URL is available</p>
-            )}
-            {!checkingSlug && slugAvailable === false && (
-              <p className="text-sm text-destructive">This URL is taken</p>
-            )}
-          </div>
-          {bookingUrl && (
-            <div className="flex items-center gap-4">
-              <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm break-all">
-                {bookingUrl}
-              </code>
+            {slug && (
               <Link href={`/${slug}`} target="_blank">
-                <Button variant="outline" size="sm" className="gap-1">
-                  Open <ExternalLink className="size-3" />
+                <Button variant="outline" size="icon" className="shrink-0">
+                  <ExternalLink className="size-4" />
                 </Button>
               </Link>
-            </div>
-          )}
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="collectPhone">Collect phone number</Label>
-              <p className="text-xs text-muted-foreground">
-                Ask clients for their phone number when booking
-              </p>
-            </div>
-            <Switch
-              id="collectPhone"
-              checked={collectPhone}
-              onCheckedChange={setCollectPhone}
-            />
+            )}
           </div>
+          {checkingSlug && (
+            <p className="text-sm text-muted-foreground">Checking...</p>
+          )}
+          {!checkingSlug && slugAvailable === false && (
+            <p className="text-sm text-destructive">This URL is taken</p>
+          )}
         </CardContent>
       </Card>
 
