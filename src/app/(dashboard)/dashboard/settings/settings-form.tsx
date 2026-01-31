@@ -192,10 +192,10 @@ export function SettingsForm({ provider: initialProvider }: Props) {
         </div>
       </PageHeader>
 
-      {/* Profile */}
+      {/* Account */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Profile</CardTitle>
+          <CardTitle className="text-base">Account</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -219,17 +219,24 @@ export function SettingsForm({ provider: initialProvider }: Props) {
               Email cannot be changed
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Business */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Business info</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="businessName">Business Name</Label>
+            <Label htmlFor="timezone">Timezone</Label>
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COMMON_TIMEZONES.map((tz) => (
+                  <SelectItem key={tz} value={tz}>
+                    {tz.replace(/_/g, ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <Label htmlFor="businessName">Business name</Label>
             <Input
               id="businessName"
               value={businessName}
@@ -290,22 +297,6 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 </Button>
               </label>
             </div>
-          </div>
-          <Separator />
-          <div className="space-y-2">
-            <Label htmlFor="timezone">Timezone</Label>
-            <Select value={timezone} onValueChange={setTimezone}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_TIMEZONES.map((tz) => (
-                  <SelectItem key={tz} value={tz}>
-                    {tz.replace(/_/g, ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -368,10 +359,10 @@ export function SettingsForm({ provider: initialProvider }: Props) {
         </CardContent>
       </Card>
 
-      {/* More Settings */}
+      {/* Advanced */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">More</CardTitle>
+          <CardTitle className="text-base">Advanced</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <nav className="flex flex-col">
