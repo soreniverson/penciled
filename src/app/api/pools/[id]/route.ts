@@ -22,6 +22,24 @@ export async function GET(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    type PoolWithMembers = {
+      id: string
+      name: string
+      description: string | null
+      pool_type: string
+      is_active: boolean
+      created_at: string
+      owner_id: string
+      resource_pool_members: Array<{
+        id: string
+        provider_id: string
+        priority: number
+        max_bookings_per_day: number | null
+        is_active: boolean
+        providers: { id: string; name: string | null; email: string } | null
+      }>
+    }
+
     const { data: pool, error } = await supabase
       .from('resource_pools')
       .select(`
@@ -32,7 +50,7 @@ export async function GET(request: Request, { params }: RouteContext) {
         )
       `)
       .eq('id', id)
-      .single()
+      .single() as { data: PoolWithMembers | null; error: Error | null }
 
     if (error || !pool) {
       return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
