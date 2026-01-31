@@ -46,7 +46,7 @@ export async function POST(request: Request, { params }: RouteContext) {
       .from('providers')
       .select('id')
       .eq('email', provider_email)
-      .single()
+      .single() as { data: { id: string } | null }
 
     if (!provider) {
       return NextResponse.json(
