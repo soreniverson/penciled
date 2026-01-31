@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,7 +25,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2, Plus, Trash2, Mail, MessageSquare, Edit2 } from 'lucide-react'
+import { Loader2, Plus, Trash2, Mail, MessageSquare, Edit2, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 import type { FollowUpTemplate } from '@/types/database'
 
 type Meeting = {
@@ -310,24 +311,28 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Follow-up Templates">
-        <Dialog open={showCreateDialog} onOpenChange={(open) => {
-          setShowCreateDialog(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="size-4 mr-1" />
-              New Template
+      <PageHeader title="Follow-Ups">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/settings">
+            <Button variant="ghost" size="sm">
+              <ChevronLeft className="size-4 mr-1" />
+              Settings
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create Follow-up Template</DialogTitle>
-              <DialogDescription>
-                Automatically send follow-ups after meetings are completed
-              </DialogDescription>
-            </DialogHeader>
+          </Link>
+          <Dialog open={showCreateDialog} onOpenChange={(open) => {
+            setShowCreateDialog(open)
+            if (!open) resetForm()
+          }}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="size-4 mr-1" />
+                New Template
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create Follow-up Template</DialogTitle>
+              </DialogHeader>
             <FormContent />
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
@@ -340,11 +345,8 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </PageHeader>
-
-      <p className="text-muted-foreground">
-        Automatically send follow-up emails or feedback requests after meetings are completed.
-      </p>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingTemplate} onOpenChange={(open) => {
@@ -380,15 +382,11 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`size-10 rounded-lg flex items-center justify-center ${
-                        template.type === 'email' ? 'bg-blue-100' : 'bg-purple-100'
-                      }`}>
-                        {template.type === 'email' ? (
-                          <Mail className={`size-5 ${template.type === 'email' ? 'text-blue-600' : 'text-purple-600'}`} />
-                        ) : (
-                          <MessageSquare className="size-5 text-purple-600" />
-                        )}
-                      </div>
+                      {template.type === 'email' ? (
+                        <Mail className="size-5 text-muted-foreground" />
+                      ) : (
+                        <MessageSquare className="size-5 text-muted-foreground" />
+                      )}
                       <div>
                         <CardTitle className="text-base flex items-center gap-2">
                           {template.name}
@@ -396,9 +394,9 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
                             <span className="text-xs bg-muted px-2 py-0.5 rounded">Inactive</span>
                           )}
                         </CardTitle>
-                        <CardDescription>
+                        <p className="text-sm text-muted-foreground">
                           {template.type === 'email' ? 'Email' : 'Feedback Request'} · Sends {formatDelay(template.delay_minutes)} after meeting
-                        </CardDescription>
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2">

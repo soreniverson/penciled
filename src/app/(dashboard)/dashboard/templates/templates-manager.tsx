@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +16,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2, Plus, Trash2, FileText, Edit2 } from 'lucide-react'
+import { Loader2, Plus, Trash2, FileText, Edit2, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 import type { MeetingTemplate } from '@/types/database'
 
 type Props = {
@@ -145,24 +146,28 @@ export function TemplatesManager({ initialTemplates }: Props) {
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Meeting Templates">
-        <Dialog open={showCreateDialog} onOpenChange={(open) => {
-          setShowCreateDialog(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="size-4 mr-1" />
-              New Template
+      <PageHeader title="Templates">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/settings">
+            <Button variant="ghost" size="sm">
+              <ChevronLeft className="size-4 mr-1" />
+              Settings
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create Template</DialogTitle>
-              <DialogDescription>
-                Create a reusable meeting template with agenda and notes
-              </DialogDescription>
-            </DialogHeader>
+          </Link>
+          <Dialog open={showCreateDialog} onOpenChange={(open) => {
+            setShowCreateDialog(open)
+            if (!open) resetForm()
+          }}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="size-4 mr-1" />
+                New Template
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create Template</DialogTitle>
+              </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
@@ -225,11 +230,8 @@ export function TemplatesManager({ initialTemplates }: Props) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </PageHeader>
-
-      <p className="text-muted-foreground">
-        Templates help you standardize meeting agendas and notes across bookings.
-      </p>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingTemplate} onOpenChange={(open) => {
@@ -308,13 +310,11 @@ export function TemplatesManager({ initialTemplates }: Props) {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="size-5 text-primary" />
-                    </div>
+                    <FileText className="size-5 text-muted-foreground" />
                     <div>
                       <CardTitle className="text-base">{template.name}</CardTitle>
                       {template.description && (
-                        <CardDescription>{template.description}</CardDescription>
+                        <p className="text-sm text-muted-foreground">{template.description}</p>
                       )}
                     </div>
                   </div>

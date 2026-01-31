@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -162,23 +162,13 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
         </Link>
       </PageHeader>
 
-      <p className="text-muted-foreground">
-        Delegates can manage bookings on your behalf. Use this to give an executive assistant
-        or team member access to your calendar.
-      </p>
-
       {/* My Delegates */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Users className="size-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-base">My Delegates</CardTitle>
-                <CardDescription>People who can manage your bookings</CardDescription>
-              </div>
+              <Users className="size-5 text-muted-foreground" />
+              <CardTitle className="text-base">My Delegates</CardTitle>
             </div>
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
@@ -297,13 +287,8 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <UserCheck className="size-5 text-green-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Delegated to Me</CardTitle>
-              <CardDescription>People whose bookings you can manage</CardDescription>
-            </div>
+            <UserCheck className="size-5 text-muted-foreground" />
+            <CardTitle className="text-base">Delegated to Me</CardTitle>
           </div>
         </CardHeader>
         <CardContent>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,7 +22,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2, Plus, Trash2, Users, UserPlus } from 'lucide-react'
+import { Loader2, Plus, Trash2, Users, UserPlus, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 
 type PoolMember = {
   id: string
@@ -186,14 +187,21 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Resource Pools">
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="size-4 mr-1" />
-              New Pool
+      <PageHeader title="Pools">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/settings">
+            <Button variant="ghost" size="sm">
+              <ChevronLeft className="size-4 mr-1" />
+              Settings
             </Button>
-          </DialogTrigger>
+          </Link>
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="size-4 mr-1" />
+                New Pool
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Resource Pool</DialogTitle>
@@ -251,12 +259,8 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </PageHeader>
-
-      <p className="text-muted-foreground">
-        Resource pools allow flexible scheduling across a group of team members.
-        When any member is available, the slot is bookable.
-      </p>
 
       {/* Owned Pools */}
       {ownedPools.length > 0 && (
@@ -267,14 +271,12 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Users className="size-5 text-primary" />
-                    </div>
+                    <Users className="size-5 text-muted-foreground" />
                     <div>
                       <CardTitle className="text-base">{pool.name}</CardTitle>
-                      <CardDescription>
+                      <p className="text-sm text-muted-foreground">
                         {POOL_TYPE_LABELS[pool.pool_type]} · {pool.resource_pool_members?.length || 0} members
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -375,14 +377,12 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
             <Card key={pool.id}>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Users className="size-5 text-green-600" />
-                  </div>
+                  <Users className="size-5 text-muted-foreground" />
                   <div>
                     <CardTitle className="text-base">{pool.name}</CardTitle>
-                    <CardDescription>
+                    <p className="text-sm text-muted-foreground">
                       {POOL_TYPE_LABELS[pool.pool_type]} · Owned by {pool.owner?.name || pool.owner?.email || 'Unknown'}
-                    </CardDescription>
+                    </p>
                   </div>
                 </div>
               </CardHeader>
