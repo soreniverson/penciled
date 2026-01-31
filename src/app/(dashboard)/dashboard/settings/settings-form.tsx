@@ -311,53 +311,38 @@ export function SettingsForm({ provider: initialProvider }: Props) {
           <nav className="flex flex-col">
             <Link
               href="/dashboard/settings/integrations"
-              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+              className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
             >
-              <div>
-                <p className="font-medium text-sm">Integrations</p>
-                <p className="text-xs text-muted-foreground">Google Calendar, Zoom</p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <span className="text-sm">Integrations</span>
+              <ChevronRight className="size-4 text-[#525252]" />
             </Link>
             <Link
               href="/dashboard/settings/delegates"
-              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+              className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
             >
-              <div>
-                <p className="font-medium text-sm">Delegates</p>
-                <p className="text-xs text-muted-foreground">Let others manage your bookings</p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <span className="text-sm">Delegates</span>
+              <ChevronRight className="size-4 text-[#525252]" />
             </Link>
             <Link
               href="/dashboard/pools"
-              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+              className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
             >
-              <div>
-                <p className="font-medium text-sm">Resource Pools</p>
-                <p className="text-xs text-muted-foreground">Team scheduling groups</p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <span className="text-sm">Pools</span>
+              <ChevronRight className="size-4 text-[#525252]" />
             </Link>
             <Link
               href="/dashboard/templates"
-              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors border-b"
+              className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
             >
-              <div>
-                <p className="font-medium text-sm">Meeting Templates</p>
-                <p className="text-xs text-muted-foreground">Reusable agendas and notes</p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <span className="text-sm">Templates</span>
+              <ChevronRight className="size-4 text-[#525252]" />
             </Link>
             <Link
               href="/dashboard/follow-up-templates"
-              className="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors"
             >
-              <div>
-                <p className="font-medium text-sm">Follow-up Templates</p>
-                <p className="text-xs text-muted-foreground">Automated post-meeting emails</p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <span className="text-sm">Follow-Ups</span>
+              <ChevronRight className="size-4 text-[#525252]" />
             </Link>
           </nav>
         </CardContent>
