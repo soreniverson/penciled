@@ -54,12 +54,13 @@ export async function getDelegationContext(
   }
 
   // Check if user is a delegate for the booking's provider
+  type DelegationResult = { id: string; permissions: DelegatePermissions; expires_at: string | null }
   const { data: delegation } = await supabase
     .from('delegates')
     .select('id, permissions, expires_at')
     .eq('principal_id', bookingProviderId)
     .eq('delegate_id', userId)
-    .single()
+    .single() as { data: DelegationResult | null }
 
   if (delegation) {
     // Check if delegation has expired
@@ -161,13 +162,17 @@ export async function getDelegates(
 ): Promise<(Delegate & { delegate: { id: string; name: string | null; email: string } })[]> {
   const supabase = createAdminClient()
 
+  type DelegationWithDelegate = Delegate & {
+    delegate: { id: string; name: string | null; email: string } | { id: string; name: string | null; email: string }[] | null
+  }
+
   const { data: delegations } = await supabase
     .from('delegates')
     .select(`
       *,
       delegate:delegate_id (id, name, email)
     `)
-    .eq('principal_id', principalId)
+    .eq('principal_id', principalId) as { data: DelegationWithDelegate[] | null }
 
   if (!delegations) return []
 

@@ -13,6 +13,19 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    type MemberPoolResult = {
+      pool_id: string
+      resource_pools: {
+        id: string
+        name: string
+        description: string | null
+        pool_type: string
+        is_active: boolean
+        created_at: string
+        owner: { id: string; name: string | null; email: string } | null
+      } | null
+    }
+
     // Get pools owned by user and pools user is a member of
     const [{ data: ownedPools }, { data: memberPools }] = await Promise.all([
       supabase
@@ -35,7 +48,7 @@ export async function GET() {
             owner:owner_id (id, name, email)
           )
         `)
-        .eq('provider_id', user.id),
+        .eq('provider_id', user.id) as unknown as { data: MemberPoolResult[] | null },
     ])
 
     return NextResponse.json({

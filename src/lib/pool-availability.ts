@@ -8,6 +8,16 @@ import {
   getCalendarBusyTimesForProviders,
 } from '@/lib/data'
 
+// Type definitions for Supabase query results
+type PoolMember = { provider_id: string; priority: number }
+type PoolMemberSimple = { provider_id: string }
+type AvailabilityRule = { provider_id: string; day_of_week: number; start_time: string; end_time: string }
+type BlackoutDate = { provider_id: string; start_date: string; end_date: string }
+type ProviderWithCalendar = { id: string; google_calendar_token: unknown }
+type PoolMemberWithMax = { provider_id: string; priority: number; max_bookings_per_day: number | null }
+type BookingConflict = { provider_id: string }
+type BookingAssignmentWithBooking = { provider_id: string; assigned_at: string; bookings: { start_time: string } }
+
 /**
  * Get union availability for a resource pool
  * Returns slots where ANY member of the pool is available
@@ -31,7 +41,7 @@ export async function getPoolUnionAvailability(
     .from('resource_pool_members')
     .select('provider_id, priority')
     .eq('pool_id', poolId)
-    .eq('is_active', true)
+    .eq('is_active', true) as { data: PoolMember[] | null }
 
   if (!poolMembers || poolMembers.length === 0) {
     return []
@@ -50,27 +60,27 @@ export async function getPoolUnionAvailability(
       .from('availability')
       .select('provider_id, day_of_week, start_time, end_time')
       .in('provider_id', memberIds)
-      .eq('is_active', true),
+      .eq('is_active', true) as unknown as { data: AvailabilityRule[] | null },
 
     supabase
       .from('blackout_dates')
       .select('provider_id, start_date, end_date')
       .in('provider_id', memberIds)
       .lte('start_date', dateStr)
-      .gte('end_date', dateStr),
+      .gte('end_date', dateStr) as unknown as { data: BlackoutDate[] | null },
 
     supabase
       .from('providers')
       .select('id, google_calendar_token')
-      .in('id', memberIds),
+      .in('id', memberIds) as unknown as { data: ProviderWithCalendar[] | null },
 
     getBookingsForProviders(memberIds, dayStart, dayEnd),
   ])
 
   // Get calendar busy times
   const membersWithCalendar = (providersData.data || [])
-    .filter((p: { id: string; google_calendar_token: unknown }) => p.google_calendar_token)
-    .map((p: { id: string }) => p.id)
+    .filter(p => p.google_calendar_token)
+    .map(p => p.id)
 
   const busyTimesByProvider = membersWithCalendar.length > 0
     ? await getCalendarBusyTimesForProviders(membersWithCalendar, dayStart, dayEnd)
@@ -78,7 +88,7 @@ export async function getPoolUnionAvailability(
 
   // Build blackout set for quick lookup
   const blackedOutMembers = new Set(
-    (blackoutsData.data || []).map((b: { provider_id: string }) => b.provider_id)
+    (blackoutsData.data || []).map(b => b.provider_id)
   )
 
   // Generate slots for each available member
@@ -89,8 +99,8 @@ export async function getPoolUnionAvailability(
     if (blackedOutMembers.has(member.provider_id)) continue
 
     const availabilityRules = (availabilityData.data || [])
-      .filter((r: { provider_id: string }) => r.provider_id === member.provider_id)
-      .map((r: { day_of_week: number; start_time: string; end_time: string }) => ({
+      .filter(r => r.provider_id === member.provider_id)
+      .map(r => ({
         day_of_week: r.day_of_week,
         start_time: r.start_time,
         end_time: r.end_time,
@@ -169,7 +179,7 @@ export async function getPoolAvailableDates(
     .from('resource_pool_members')
     .select('provider_id')
     .eq('pool_id', poolId)
-    .eq('is_active', true)
+    .eq('is_active', true) as { data: PoolMemberSimple[] | null }
 
   if (!poolMembers || poolMembers.length === 0) {
     return []
@@ -183,13 +193,13 @@ export async function getPoolAvailableDates(
       .from('availability')
       .select('provider_id, day_of_week')
       .in('provider_id', memberIds)
-      .eq('is_active', true),
+      .eq('is_active', true) as unknown as { data: { provider_id: string; day_of_week: number }[] | null },
 
     supabase
       .from('blackout_dates')
       .select('provider_id, start_date, end_date')
       .in('provider_id', memberIds)
-      .gte('end_date', todayStr),
+      .gte('end_date', todayStr) as unknown as { data: BlackoutDate[] | null },
   ])
 
   // Group data by provider
@@ -199,13 +209,13 @@ export async function getPoolAvailableDates(
   for (const memberId of memberIds) {
     const days = new Set(
       (availabilityData.data || [])
-        .filter((r: { provider_id: string }) => r.provider_id === memberId)
-        .map((r: { day_of_week: number }) => r.day_of_week)
+        .filter(r => r.provider_id === memberId)
+        .map(r => r.day_of_week)
     )
     memberAvailableDays.set(memberId, days)
 
     const blackouts = (blackoutsData.data || [])
-      .filter((b: { provider_id: string }) => b.provider_id === memberId)
+      .filter(b => b.provider_id === memberId)
     memberBlackouts.set(memberId, blackouts)
   }
 
@@ -267,7 +277,7 @@ export async function selectPoolMember(
     .select('provider_id, priority, max_bookings_per_day')
     .eq('pool_id', poolId)
     .eq('is_active', true)
-    .order('priority', { ascending: false }) // Higher priority first
+    .order('priority', { ascending: false }) as { data: PoolMemberWithMax[] | null }
 
   if (!members || members.length === 0) {
     return null
@@ -282,7 +292,7 @@ export async function selectPoolMember(
     .in('provider_id', memberIds)
     .neq('status', 'cancelled')
     .lt('start_time', endTime.toISOString())
-    .gt('end_time', startTime.toISOString())
+    .gt('end_time', startTime.toISOString()) as { data: BookingConflict[] | null }
 
   const busyMemberIds = new Set(conflicts?.map(c => c.provider_id) || [])
   const availableMembers = members.filter(m => !busyMemberIds.has(m.provider_id))
@@ -298,20 +308,20 @@ export async function selectPoolMember(
   }
 
   // For round_robin and load_balanced, get booking stats
-  const startOfDay = new Date(startTime)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(startTime)
-  endOfDay.setHours(23, 59, 59, 999)
+  const dayStart = new Date(startTime)
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(startTime)
+  dayEnd.setHours(23, 59, 59, 999)
 
-  const startOfWeek = new Date(startTime)
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-  startOfWeek.setHours(0, 0, 0, 0)
+  const weekStart = new Date(startTime)
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+  weekStart.setHours(0, 0, 0, 0)
 
   const { data: recentBookings } = await supabase
     .from('booking_assignments')
     .select('provider_id, assigned_at, bookings!inner(start_time)')
     .in('provider_id', availableMembers.map(m => m.provider_id))
-    .gte('bookings.start_time', startOfWeek.toISOString())
+    .gte('bookings.start_time', weekStart.toISOString()) as { data: BookingAssignmentWithBooking[] | null }
 
   const memberStats = new Map<string, {
     bookingsToday: number
@@ -323,8 +333,8 @@ export async function selectPoolMember(
   for (const member of availableMembers) {
     const memberBookings = recentBookings?.filter(b => b.provider_id === member.provider_id) || []
     const todayBookings = memberBookings.filter(b => {
-      const bookingDate = new Date((b.bookings as { start_time: string }).start_time)
-      return bookingDate >= startOfDay && bookingDate <= endOfDay
+      const bookingDate = new Date(b.bookings.start_time)
+      return bookingDate >= dayStart && bookingDate <= dayEnd
     })
 
     const lastAssignment = memberBookings

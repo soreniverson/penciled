@@ -179,7 +179,7 @@ export async function createZoomMeeting(
     .from('providers')
     .select('zoom_user_id')
     .eq('id', providerId)
-    .single()
+    .single() as { data: { zoom_user_id: string | null } | null }
 
   if (!provider?.zoom_user_id) {
     return { meetingId: null, meetingUrl: null }

@@ -12,6 +12,12 @@ type MemberWithStats = {
   lastAssignedAt: Date | null
 }
 
+// Type definitions for Supabase query results
+type MemberResult = { provider_id: string; is_required: boolean }
+type BookingAssignmentWithBooking = { provider_id: string; assigned_at: string; bookings: { start_time: string } }
+type BookingConflict = { provider_id: string }
+type AssignmentResult = { provider_id: string; assigned_at: string; assignment_reason: string | null }
+
 /**
  * Assign members to a flexible team booking (Any N of M)
  * Returns the assigned member IDs
@@ -30,31 +36,30 @@ export async function assignMembersToBooking(
   const { data: members } = await supabase
     .from('booking_link_members')
     .select('provider_id, is_required')
-    .eq('booking_link_id', bookingLinkId)
+    .eq('booking_link_id', bookingLinkId) as { data: MemberResult[] | null }
 
   if (!members || members.length === 0) {
     return []
   }
 
   const memberIds = members.map(m => m.provider_id)
-  const requiredMemberIds = members.filter(m => m.is_required).map(m => m.provider_id)
 
   // Get booking stats for load balancing
-  const startOfDay = new Date(startTime)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(startTime)
-  endOfDay.setHours(23, 59, 59, 999)
+  const dayStart = new Date(startTime)
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(startTime)
+  dayEnd.setHours(23, 59, 59, 999)
 
-  const startOfWeek = new Date(startTime)
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-  startOfWeek.setHours(0, 0, 0, 0)
+  const weekStart = new Date(startTime)
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+  weekStart.setHours(0, 0, 0, 0)
 
   // Get bookings for stats
   const { data: recentBookings } = await supabase
     .from('booking_assignments')
     .select('provider_id, assigned_at, bookings!inner(start_time)')
     .in('provider_id', memberIds)
-    .gte('bookings.start_time', startOfWeek.toISOString())
+    .gte('bookings.start_time', weekStart.toISOString()) as { data: BookingAssignmentWithBooking[] | null }
 
   // Get member availability for this specific time slot
   const { data: conflictingBookings } = await supabase
@@ -63,7 +68,7 @@ export async function assignMembersToBooking(
     .in('provider_id', memberIds)
     .neq('status', 'cancelled')
     .lt('start_time', endTime.toISOString())
-    .gt('end_time', startTime.toISOString())
+    .gt('end_time', startTime.toISOString()) as { data: BookingConflict[] | null }
 
   const busyMemberIds = new Set(conflictingBookings?.map(b => b.provider_id) || [])
 
@@ -71,8 +76,8 @@ export async function assignMembersToBooking(
   const memberStats: MemberWithStats[] = members.map(m => {
     const memberBookings = recentBookings?.filter(b => b.provider_id === m.provider_id) || []
     const todayBookings = memberBookings.filter(b => {
-      const bookingDate = new Date((b.bookings as { start_time: string }).start_time)
-      return bookingDate >= startOfDay && bookingDate <= endOfDay
+      const bookingDate = new Date(b.bookings.start_time)
+      return bookingDate >= dayStart && bookingDate <= dayEnd
     })
 
     const lastAssignment = memberBookings
@@ -134,6 +139,7 @@ export async function assignMembersToBooking(
   if (assignments.length > 0) {
     await supabase
       .from('booking_assignments')
+      // @ts-ignore - Supabase types not inferring correctly for new tables
       .insert(assignments)
   }
 
@@ -151,7 +157,7 @@ export async function getBookingAssignments(
   const { data } = await supabase
     .from('booking_assignments')
     .select('provider_id, assigned_at, assignment_reason')
-    .eq('booking_id', bookingId)
+    .eq('booking_id', bookingId) as { data: AssignmentResult[] | null }
 
   if (!data) return []
 

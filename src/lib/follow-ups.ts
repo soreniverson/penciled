@@ -2,6 +2,24 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { InsertFollowUp } from '@/types/database'
 import { addMinutes } from 'date-fns'
 
+// Type definitions for Supabase query results
+type FollowUpTemplate = {
+  id: string
+  name: string
+  type: string
+  delay_minutes: number
+  subject: string | null
+  content: string
+  apply_to_meetings: string[] | null
+  is_active: boolean
+}
+
+type PendingFollowUp = {
+  id: string
+  type: string
+  scheduled_for: string
+}
+
 /**
  * Schedule follow-ups for a completed booking based on matching templates
  */
@@ -18,7 +36,7 @@ export async function scheduleFollowUps(
     .from('follow_up_templates')
     .select('*')
     .eq('provider_id', providerId)
-    .eq('is_active', true)
+    .eq('is_active', true) as { data: FollowUpTemplate[] | null }
 
   if (!templates || templates.length === 0) {
     return
@@ -53,6 +71,7 @@ export async function scheduleFollowUps(
   // Insert all follow-ups
   const { error } = await supabase
     .from('follow_ups')
+    // @ts-ignore - Supabase types not inferring correctly for new tables
     .insert(followUps)
 
   if (error) {
@@ -72,7 +91,7 @@ export async function getPendingFollowUps(
     .from('follow_ups')
     .select('id, type, scheduled_for')
     .eq('booking_id', bookingId)
-    .eq('status', 'pending')
+    .eq('status', 'pending') as { data: PendingFollowUp[] | null }
 
   return data || []
 }
