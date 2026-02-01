@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/page-header'
@@ -46,6 +46,23 @@ export function BookingsPageClient({
 }: Props) {
   const searchParams = useSearchParams()
   const principalId = searchParams.get('principal')
+  const quickBookButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Enter key shortcut to open Quick Book
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger if Enter is pressed and no input/textarea is focused
+      if (e.key === 'Enter' &&
+          !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) &&
+          !(e.target as HTMLElement)?.isContentEditable) {
+        e.preventDefault()
+        quickBookButtonRef.current?.click()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Determine which bookings to show
   const isViewingPrincipal = principalId && delegateBookings?.principalId === principalId
@@ -62,7 +79,7 @@ export function BookingsPageClient({
       <PageHeader title="Bookings">
         <div className="flex gap-2">
           <QuickBookDialog providerId={userId} principalId={isViewingPrincipal ? principalId : null}>
-            <Button variant="outline" size="icon">
+            <Button ref={quickBookButtonRef} variant="outline" size="icon" title="Quick Book (Enter)">
               <Zap className="size-4" />
             </Button>
           </QuickBookDialog>
