@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { Calendar, Clock, User, MapPin, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import { CancelBookingClient } from './cancel-button'
@@ -11,7 +11,7 @@ import type { Booking, Service, Provider } from '@/types/database'
 
 type BookingWithDetails = Booking & {
   services: Pick<Service, 'name' | 'duration_minutes'> | null
-  providers: Pick<Provider, 'business_name' | 'email'> | null
+  providers: Pick<Provider, 'business_name' | 'email' | 'timezone'> | null
 }
 
 type Props = {
@@ -31,7 +31,7 @@ export default async function ManageBookingPage({ params, searchParams }: Props)
     .select(`
       *,
       services (name, duration_minutes),
-      providers (business_name, email)
+      providers (business_name, email, timezone)
     `)
     .eq('id', id)
     .single()
@@ -118,7 +118,7 @@ export default async function ManageBookingPage({ params, searchParams }: Props)
                   Date
                 </p>
                 <p className="font-medium">
-                  {format(new Date(booking.start_time), 'EEEE, MMMM d, yyyy')}
+                  {formatInTimeZone(new Date(booking.start_time), booking.providers?.timezone || 'UTC', 'EEEE, MMMM d, yyyy')}
                 </p>
               </div>
               <div>
@@ -127,7 +127,7 @@ export default async function ManageBookingPage({ params, searchParams }: Props)
                   Time
                 </p>
                 <p className="font-medium">
-                  {format(new Date(booking.start_time), 'h:mm a')} - {format(new Date(booking.end_time), 'h:mm a')}
+                  {formatInTimeZone(new Date(booking.start_time), booking.providers?.timezone || 'UTC', 'h:mm a')} - {formatInTimeZone(new Date(booking.end_time), booking.providers?.timezone || 'UTC', 'h:mm a')}
                 </p>
               </div>
             </div>

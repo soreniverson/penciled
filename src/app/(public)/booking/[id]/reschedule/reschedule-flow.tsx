@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { formatDuration } from '@/lib/utils'
 import { getAvailableDates, type TimeSlot } from '@/lib/availability'
 import type { Provider, Meeting, Availability, Booking } from '@/types/database'
-import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { Clock, ArrowLeft, Check, Loader2, CalendarDays } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import Link from 'next/link'
@@ -192,7 +192,7 @@ export function RescheduleFlow({ booking, provider, meeting, availability, token
               </h2>
               <p className="text-sm text-muted-foreground mt-1 h-5">
                 {step === 'date' && `Rescheduling: ${meeting.name}`}
-                {step === 'time' && selectedDate && format(selectedDate, 'EEEE, MMMM d')}
+                {step === 'time' && selectedDate && formatInTimeZone(selectedDate, provider.timezone, 'EEEE, MMMM d')}
               </p>
             </div>
           </div>
@@ -203,7 +203,7 @@ export function RescheduleFlow({ booking, provider, meeting, availability, token
           <div className="mb-4 p-3 rounded-lg bg-secondary text-sm">
             <p className="text-muted-foreground">Current appointment:</p>
             <p className="font-medium">
-              {format(new Date(booking.start_time), 'EEE, MMM d')} at {format(new Date(booking.start_time), 'h:mm a')}
+              {formatInTimeZone(new Date(booking.start_time), provider.timezone, 'EEE, MMM d')} at {formatInTimeZone(new Date(booking.start_time), provider.timezone, 'h:mm a')}
             </p>
           </div>
         )}
@@ -247,7 +247,7 @@ export function RescheduleFlow({ booking, provider, meeting, availability, token
                             : 'bg-card hover:border-muted-foreground'
                         }`}
                       >
-                        {format(slot.start, 'h:mm a')}
+                        {formatInTimeZone(slot.start, provider.timezone, 'h:mm a')}
                       </button>
                     ))}
                   </div>
@@ -290,9 +290,9 @@ export function RescheduleFlow({ booking, provider, meeting, availability, token
                 <div className="flex items-start gap-3">
                   <CalendarDays className="size-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="font-medium">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
+                    <p className="font-medium">{formatInTimeZone(selectedDate, provider.timezone, 'EEEE, MMMM d, yyyy')}</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(selectedSlot.start, 'h:mm a')} - {format(selectedSlot.end, 'h:mm a')}
+                      {formatInTimeZone(selectedSlot.start, provider.timezone, 'h:mm a')} - {formatInTimeZone(selectedSlot.end, provider.timezone, 'h:mm a')}
                     </p>
                   </div>
                 </div>

@@ -1,7 +1,22 @@
 import { Resend } from 'resend'
-import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+// Helper to get timezone abbreviation (e.g., "PST", "EST")
+function getTimezoneAbbr(timezone: string): string {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'short',
+    })
+    const parts = formatter.formatToParts(new Date())
+    const tzPart = parts.find(p => p.type === 'timeZoneName')
+    return tzPart?.value || timezone
+  } catch {
+    return timezone
+  }
+}
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'penciled.fyi <noreply@penciled.fyi>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -22,10 +37,11 @@ type BookingEmailData = {
 }
 
 export async function sendBookingConfirmationToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, meetingLink } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, meetingLink, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   const meetingLinkHtml = meetingLink ? `
@@ -85,10 +101,11 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingNotificationToProvider(data: BookingEmailData) {
-  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, notes, managementToken } = data
+  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, notes, managementToken, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
@@ -149,10 +166,11 @@ export async function sendBookingNotificationToProvider(data: BookingEmailData) 
 }
 
 export async function sendCancellationEmailToClient(data: BookingEmailData & { reason?: string }) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, reason } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, reason, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
 
   try {
     await resend.emails.send({
@@ -203,10 +221,11 @@ export async function sendCancellationEmailToClient(data: BookingEmailData & { r
 
 // Booking request emails (for request mode)
 export async function sendBookingRequestToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   try {
@@ -257,10 +276,11 @@ export async function sendBookingRequestToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingRequestToProvider(data: BookingEmailData) {
-  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, notes, managementToken } = data
+  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, notes, managementToken, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
@@ -321,10 +341,11 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
 }
 
 export async function sendBookingApprovalToClient(data: BookingEmailData) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, meetingLink } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, meetingLink, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   const meetingLinkHtml = meetingLink ? `
@@ -384,10 +405,11 @@ export async function sendBookingApprovalToClient(data: BookingEmailData) {
 }
 
 export async function sendBookingDeclinedToClient(data: BookingEmailData & { reason?: string }) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, reason } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, reason, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
 
   try {
     await resend.emails.send({
@@ -437,10 +459,11 @@ export async function sendBookingDeclinedToClient(data: BookingEmailData & { rea
 }
 
 export async function sendCancellationEmailToProvider(data: BookingEmailData & { reason?: string }) {
-  const { providerEmail, providerName, clientName, meetingName, startTime, endTime, reason } = data
+  const { providerEmail, providerName, clientName, meetingName, startTime, endTime, reason, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
 
   try {
     await resend.emails.send({
@@ -492,12 +515,13 @@ export async function sendProviderRescheduleNotification(data: BookingEmailData 
   reason?: string
   rescheduledByName?: string
 }) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, oldStartTime, oldEndTime, reason, rescheduledByName, meetingLink } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, oldStartTime, oldEndTime, reason, rescheduledByName, meetingLink, timezone } = data
 
-  const formattedOldDate = format(oldStartTime, 'EEEE, MMMM d, yyyy')
-  const formattedOldTime = `${format(oldStartTime, 'h:mm a')} - ${format(oldEndTime, 'h:mm a')}`
-  const formattedNewDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedNewTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedOldDate = formatInTimeZone(oldStartTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedOldTime = `${formatInTimeZone(oldStartTime, timezone, 'h:mm a')} - ${formatInTimeZone(oldEndTime, timezone, 'h:mm a')} (${tzAbbr})`
+  const formattedNewDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedNewTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   const rescheduledByText = rescheduledByName && rescheduledByName !== providerName
@@ -572,10 +596,11 @@ export async function sendConflictOverrideNotification(data: BookingEmailData & 
   conflictingClientEmail: string
   overrideByName: string
 }) {
-  const { providerEmail, providerName, clientName, meetingName, startTime, endTime, conflictingClientName, overrideByName } = data
+  const { providerEmail, providerName, clientName, meetingName, startTime, endTime, conflictingClientName, overrideByName, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
 
   try {
@@ -630,10 +655,11 @@ export async function sendConflictOverrideNotification(data: BookingEmailData & 
 
 // Reminder emails
 export async function sendReminderEmailToClient(data: BookingEmailData & { hoursUntil: number }) {
-  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, hoursUntil, meetingLink } = data
+  const { clientEmail, clientName, meetingName, providerName, startTime, endTime, managementToken, hoursUntil, meetingLink, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
   const timeLabel = hoursUntil === 24 ? 'tomorrow' : 'in 1 hour'
@@ -695,10 +721,11 @@ export async function sendReminderEmailToClient(data: BookingEmailData & { hours
 }
 
 export async function sendReminderEmailToProvider(data: BookingEmailData & { hoursUntil: number }) {
-  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, hoursUntil, managementToken } = data
+  const { providerEmail, providerName, clientName, clientEmail, meetingName, startTime, endTime, hoursUntil, managementToken, timezone } = data
 
-  const formattedDate = format(startTime, 'EEEE, MMMM d, yyyy')
-  const formattedTime = `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
+  const tzAbbr = getTimezoneAbbr(timezone)
+  const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
+  const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 

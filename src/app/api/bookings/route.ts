@@ -10,6 +10,7 @@ import {
 import { parseBody, createBookingWithOverridesSchema, type CreateBookingWithOverridesInput } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createCalendarEvent, getCalendarBusyTimes } from '@/lib/google-calendar'
+import { createZoomMeeting, shouldUseZoom } from '@/lib/zoom'
 import { logApiError } from '@/lib/error-logger'
 import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
 import { assignMembersToBooking } from '@/lib/booking-assignment'
@@ -75,14 +76,15 @@ export async function POST(request: Request) {
       approvedByUserId = user.id
     }
 
-    // Fetch meeting to get booking mode
+    // Fetch meeting to get booking mode and video platform
     const { data: meetingData } = await supabase
       .from('meetings')
-      .select('booking_mode, name')
+      .select('booking_mode, name, video_platform')
       .eq('id', meeting_id)
-      .single() as { data: { booking_mode: string | null; name: string } | null }
+      .single() as { data: { booking_mode: string | null; name: string; video_platform: 'google_meet' | 'zoom' | 'none' | 'auto' | null } | null }
 
     const bookingMode = meetingData?.booking_mode || 'instant'
+    const videoPlatform = meetingData?.video_platform || 'google_meet'
 
     // Check for conflicts (unless override_conflicts is set)
     let conflictingBooking: { id: string; client_name: string; client_email: string } | null = null
@@ -192,6 +194,7 @@ export async function POST(request: Request) {
       email: string
       timezone: string
       google_calendar_token: unknown
+      zoom_token: unknown
     }
 
     let teamMembers: TeamMember[] = []
@@ -216,7 +219,8 @@ export async function POST(request: Request) {
             business_name,
             email,
             timezone,
-            google_calendar_token
+            google_calendar_token,
+            zoom_token
           )
         `)
         .eq('booking_link_id', booking_link_id)
@@ -261,7 +265,7 @@ export async function POST(request: Request) {
       // Single provider booking
       const { data: provider } = await supabase
         .from('providers')
-        .select('id, name, business_name, email, timezone, google_calendar_token')
+        .select('id, name, business_name, email, timezone, google_calendar_token, zoom_token')
         .eq('id', provider_id)
         .single() as { data: TeamMember | null }
 
@@ -283,9 +287,37 @@ export async function POST(request: Request) {
       try {
         let meetingLink: string | null = null
 
-        // For instant bookings, create calendar event FIRST to get meeting link
+        // For instant bookings, create video meeting and calendar events
         if (bookingMode !== 'request') {
-          // Create calendar events for all members with Google connected
+          // Check if we should use Zoom based on video platform setting
+          const useZoom = shouldUseZoom(
+            videoPlatform,
+            primaryMember.email,
+            client_email,
+            !!primaryMember.zoom_token
+          )
+
+          if (useZoom && videoPlatform !== 'none') {
+            // Create Zoom meeting
+            console.log('Creating Zoom meeting...')
+            const zoomResult = await createZoomMeeting(
+              primaryMember.id,
+              {
+                id: booking.id,
+                client_name,
+                client_email,
+                start_time,
+                end_time,
+                notes,
+              },
+              meetingName
+            )
+            meetingLink = zoomResult.meetingUrl
+            console.log('Zoom meeting created:', meetingLink)
+          }
+
+          // Create Google Calendar events for all members with Google connected
+          // If no Zoom meeting was created, Google Meet link will be used
           const calendarResults = await Promise.all(
             teamMembers
               .filter(member => member.google_calendar_token)
@@ -306,8 +338,10 @@ export async function POST(request: Request) {
               )
           )
 
-          // Get the meeting link from the first successful calendar event
-          meetingLink = calendarResults.find(r => r.meetingLink)?.meetingLink || null
+          // If no Zoom link, get Google Meet link from calendar event
+          if (!meetingLink && videoPlatform !== 'none') {
+            meetingLink = calendarResults.find(r => r.meetingLink)?.meetingLink || null
+          }
           console.log('Calendar events created, meeting link:', meetingLink)
         }
 

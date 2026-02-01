@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { formatDuration } from '@/lib/utils'
 import { type TimeSlot } from '@/lib/availability'
 import type { BookingLink, Provider, Meeting } from '@/types/database'
-import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { Clock, ArrowLeft, Check, Loader2, CalendarDays, Users, Globe, AlertCircle } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import Link from 'next/link'
@@ -264,8 +264,8 @@ export function LinkBookingFlow({ bookingLink, members, meetings, ownerTimezone 
               <p className="text-sm text-muted-foreground mt-1 h-5">
                 {step === 'service' && `${meetings.length} available`}
                 {step === 'date' && selectedMeeting && `${selectedMeeting.name} • ${formatDuration(selectedMeeting.duration_minutes)}`}
-                {step === 'time' && selectedDate && format(selectedDate, 'EEEE, MMMM d')}
-                {step === 'details' && selectedDate && selectedSlot && `${format(selectedDate, 'EEE, MMM d')} at ${format(selectedSlot.start, 'h:mm a')}`}
+                {step === 'time' && selectedDate && formatInTimeZone(selectedDate, ownerTimezone, 'EEEE, MMMM d')}
+                {step === 'details' && selectedDate && selectedSlot && `${formatInTimeZone(selectedDate, ownerTimezone, 'EEE, MMM d')} at ${formatInTimeZone(selectedSlot.start, ownerTimezone, 'h:mm a')}`}
               </p>
             </div>
           </div>
@@ -353,7 +353,7 @@ export function LinkBookingFlow({ bookingLink, members, meetings, ownerTimezone 
                         onClick={() => handleSlotSelect(slot)}
                         className="py-4 px-2 text-sm font-medium rounded-lg border bg-card hover:border-primary/40 active:bg-secondary transition-colors text-center touch-manipulation"
                       >
-                        {format(slot.start, 'h:mm a')}
+                        {formatInTimeZone(slot.start, ownerTimezone, 'h:mm a')}
                       </button>
                     ))}
                   </div>
@@ -483,9 +483,9 @@ export function LinkBookingFlow({ bookingLink, members, meetings, ownerTimezone 
                 <div className="flex items-start gap-3">
                   <CalendarDays className="size-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="font-medium">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
+                    <p className="font-medium">{formatInTimeZone(selectedDate, ownerTimezone, 'EEEE, MMMM d, yyyy')}</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(selectedSlot.start, 'h:mm a')} - {format(selectedSlot.end, 'h:mm a')} ({formattedTimezone})
+                      {formatInTimeZone(selectedSlot.start, ownerTimezone, 'h:mm a')} - {formatInTimeZone(selectedSlot.end, ownerTimezone, 'h:mm a')} ({formattedTimezone})
                     </p>
                   </div>
                 </div>
