@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,9 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { generateSlug } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
-import { Loader2, Check, ExternalLink, LogOut, X, ImageIcon, ChevronRight } from 'lucide-react'
+import { Loader2, Check, X, ImageIcon, ChevronRight, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Provider } from '@/types/database'
@@ -43,33 +50,39 @@ type Props = {
 export function SettingsForm({ provider: initialProvider }: Props) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const isInitialLoad = useRef(true)
   const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const [name, setName] = useState(initialProvider.name || '')
-  const [businessName, setBusinessName] = useState(initialProvider.business_name || '')
-  const [slug, setSlug] = useState(initialProvider.slug || '')
-  const [timezone, setTimezone] = useState(initialProvider.timezone || '')
+  // Current values (for display)
+  const [currentName, setCurrentName] = useState(initialProvider.name || '')
+  const [currentBusinessName, setCurrentBusinessName] = useState(initialProvider.business_name || '')
+  const [currentSlug, setCurrentSlug] = useState(initialProvider.slug || '')
+  const [currentTimezone, setCurrentTimezone] = useState(initialProvider.timezone || '')
   const [logoUrl, setLogoUrl] = useState<string | null>(initialProvider.logo_url || null)
-  const [uploadingLogo, setUploadingLogo] = useState(false)
+
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editBusinessName, setEditBusinessName] = useState('')
+  const [editSlug, setEditSlug] = useState('')
+  const [editTimezone, setEditTimezone] = useState('')
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(true)
   const [checkingSlug, setCheckingSlug] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
-  // Mark initial load complete after first render and cleanup timeouts
+  // Cleanup timeouts
   useEffect(() => {
-    const timer = setTimeout(() => { isInitialLoad.current = false }, 100)
     return () => {
-      clearTimeout(timer)
       if (savedTimeoutRef.current) {
         clearTimeout(savedTimeoutRef.current)
       }
     }
   }, [])
 
-  // Check slug availability
+  // Check slug availability when editing
   useEffect(() => {
-    if (!slug || slug === initialProvider.slug) {
-      setSlugAvailable(slug === initialProvider.slug ? true : null)
+    if (!editModalOpen) return
+    if (!editSlug || editSlug === currentSlug) {
+      setSlugAvailable(editSlug === currentSlug ? true : null)
       return
     }
 
@@ -79,7 +92,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
       const { data } = await supabase
         .from('providers')
         .select('id')
-        .eq('slug', slug)
+        .eq('slug', editSlug)
         .neq('id', initialProvider.id)
         .maybeSingle()
 
@@ -89,9 +102,17 @@ export function SettingsForm({ provider: initialProvider }: Props) {
 
     const debounce = setTimeout(checkSlug, 500)
     return () => clearTimeout(debounce)
-  }, [slug, initialProvider.slug, initialProvider.id])
+  }, [editSlug, currentSlug, initialProvider.id, editModalOpen])
 
-  // Auto-save function
+  const openEditModal = () => {
+    setEditName(currentName)
+    setEditBusinessName(currentBusinessName)
+    setEditSlug(currentSlug)
+    setEditTimezone(currentTimezone)
+    setSlugAvailable(true)
+    setEditModalOpen(true)
+  }
+
   const saveSettings = useCallback(async () => {
     if (!slugAvailable) return
 
@@ -102,14 +123,19 @@ export function SettingsForm({ provider: initialProvider }: Props) {
         .from('providers')
         // @ts-ignore - Supabase types not inferring correctly
         .update({
-          name: name || null,
-          business_name: businessName || null,
-          slug: slug || null,
-          timezone,
+          name: editName || null,
+          business_name: editBusinessName || null,
+          slug: editSlug || null,
+          timezone: editTimezone,
         })
         .eq('id', initialProvider.id)
 
       if (!error) {
+        setCurrentName(editName)
+        setCurrentBusinessName(editBusinessName)
+        setCurrentSlug(editSlug)
+        setCurrentTimezone(editTimezone)
+        setEditModalOpen(false)
         setSaved(true)
         if (savedTimeoutRef.current) {
           clearTimeout(savedTimeoutRef.current)
@@ -121,19 +147,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
     } finally {
       setSaving(false)
     }
-  }, [name, businessName, slug, timezone, slugAvailable, initialProvider.id])
-
-  // Auto-save on changes (debounced)
-  useEffect(() => {
-    if (isInitialLoad.current) return
-    if (!slugAvailable) return
-
-    const timeout = setTimeout(() => {
-      saveSettings()
-    }, 800)
-
-    return () => clearTimeout(timeout)
-  }, [name, businessName, slug, timezone, saveSettings, slugAvailable])
+  }, [editName, editBusinessName, editSlug, editTimezone, slugAvailable, initialProvider.id])
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -199,42 +213,117 @@ export function SettingsForm({ provider: initialProvider }: Props) {
       {/* Account */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Account</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Account</CardTitle>
+            <Button variant="ghost" size="sm" onClick={openEditModal}>
+              <Pencil className="size-4" />
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
+        <CardContent>
+          <div className="flex items-start gap-4">
+            {/* Logo */}
+            <label className="block shrink-0">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploadingLogo || !!logoUrl}
+                className="hidden"
+              />
+              {logoUrl ? (
+                <div className="relative group size-14 cursor-default">
+                  <Image
+                    src={logoUrl}
+                    alt="Logo"
+                    width={56}
+                    height={56}
+                    className="size-14 rounded-lg object-contain bg-muted"
+                    unoptimized={logoUrl.startsWith('data:')}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); handleLogoRemove(); }}
+                    disabled={uploadingLogo}
+                    className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >
+                    <X className="size-4 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="size-14 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors">
+                  {uploadingLogo ? (
+                    <Loader2 className="size-5 text-muted-foreground/50 animate-spin" />
+                  ) : (
+                    <ImageIcon className="size-5 text-muted-foreground/50" />
+                  )}
+                </div>
+              )}
+            </label>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0 space-y-1">
+              <p className="font-medium truncate">{currentName || 'No name set'}</p>
+              <p className="text-sm text-muted-foreground truncate">{initialProvider.email}</p>
+              {currentBusinessName && (
+                <p className="text-sm text-muted-foreground truncate">{currentBusinessName}</p>
+              )}
+              <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
+                {currentSlug && (
+                  <span className="truncate">penciled.fyi/{currentSlug}</span>
+                )}
+                <span className="truncate">{currentTimezone?.replace(/_/g, ' ')}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Account</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
                 placeholder="Your name"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
-              <Input
-                id="email"
-                value={initialProvider.email || ''}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="businessName" className="text-xs text-muted-foreground">Company</Label>
+            <div className="space-y-2">
+              <Label htmlFor="businessName">Company</Label>
               <Input
                 id="businessName"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
+                value={editBusinessName}
+                onChange={(e) => setEditBusinessName(e.target.value)}
                 placeholder="Company name"
               />
             </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="timezone" className="text-xs text-muted-foreground">Timezone</Label>
-              <Select value={timezone} onValueChange={setTimezone}>
+            <div className="space-y-2">
+              <Label htmlFor="slug">Link</Label>
+              <div className="flex items-center">
+                <span className="px-2 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground shrink-0">
+                  penciled.fyi/
+                </span>
+                <Input
+                  id="slug"
+                  className="rounded-l-none"
+                  value={editSlug}
+                  onChange={(e) => setEditSlug(generateSlug(e.target.value))}
+                />
+              </div>
+              {!checkingSlug && slugAvailable === false && (
+                <p className="text-xs text-destructive">Taken</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Timezone</Label>
+              <Select value={editTimezone} onValueChange={setEditTimezone}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -247,73 +336,18 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="slug" className="text-xs text-muted-foreground">Link</Label>
-              <div className="relative">
-                <div className="flex items-center">
-                  <span className="px-2 py-2 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground shrink-0">
-                    penciled.fyi/
-                  </span>
-                  <Input
-                    id="slug"
-                    className="rounded-l-none pr-9"
-                    value={slug}
-                    onChange={(e) => setSlug(generateSlug(e.target.value))}
-                  />
-                </div>
-                {slug && (
-                  <Link href={`/${slug}`} target="_blank" className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <ExternalLink className="size-4 text-muted-foreground hover:text-foreground transition-colors" />
-                  </Link>
-                )}
-              </div>
-              {!checkingSlug && slugAvailable === false && (
-                <p className="text-xs text-destructive">Taken</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Logo</Label>
-              <label className="block">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  disabled={uploadingLogo || !!logoUrl}
-                  className="hidden"
-                />
-                {logoUrl ? (
-                  <div className="relative group size-10 cursor-default">
-                    <Image
-                      src={logoUrl}
-                      alt="Logo"
-                      width={40}
-                      height={40}
-                      className="size-10 rounded-lg object-contain bg-muted"
-                      unoptimized={logoUrl.startsWith('data:')}
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); handleLogoRemove(); }}
-                      disabled={uploadingLogo}
-                      className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                    >
-                      <X className="size-4 text-white" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="size-10 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors">
-                    {uploadingLogo ? (
-                      <Loader2 className="size-4 text-muted-foreground/50 animate-spin" />
-                    ) : (
-                      <ImageIcon className="size-4 text-muted-foreground/50" />
-                    )}
-                  </div>
-                )}
-              </label>
-            </div>
           </div>
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveSettings} disabled={saving || slugAvailable === false}>
+              {saving && <Loader2 className="size-4 mr-2 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Advanced */}
       <Card>
@@ -327,13 +361,6 @@ export function SettingsForm({ provider: initialProvider }: Props) {
               className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
             >
               <span className="text-sm">Integrations</span>
-              <ChevronRight className="size-4 text-[#525252]" />
-            </Link>
-            <Link
-              href="/dashboard/links"
-              className="flex items-center justify-between px-6 py-3 hover:bg-[#1f1f1f] transition-colors border-b border-[#1f1f1f]"
-            >
-              <span className="text-sm">Team</span>
               <ChevronRight className="size-4 text-[#525252]" />
             </Link>
             <Link
@@ -369,14 +396,14 @@ export function SettingsForm({ provider: initialProvider }: Props) {
       </Card>
 
       {/* Sign Out */}
-      <div className="pt-4">
-        <form action="/api/auth/logout" method="POST">
-          <Button variant="ghost" className="text-muted-foreground hover:text-destructive">
-            <LogOut className="size-4 mr-2" />
-            Sign out
-          </Button>
-        </form>
-      </div>
+      <form action="/api/auth/logout" method="POST">
+        <button
+          type="submit"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Sign out
+        </button>
+      </form>
     </div>
   )
 }

@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export function DisconnectZoomButton() {
@@ -37,14 +36,12 @@ export function DisconnectZoomButton() {
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
+    <button
       onClick={handleDisconnect}
       disabled={disconnecting}
+      className="text-muted-foreground hover:text-foreground transition-colors p-1"
     >
-      {disconnecting && <Loader2 className="size-4 mr-2 animate-spin" />}
-      Disconnect
-    </Button>
+      {disconnecting ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
+    </button>
   )
 }

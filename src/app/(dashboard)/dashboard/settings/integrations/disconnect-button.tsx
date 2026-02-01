@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 
 export function DisconnectGoogleCalendarButton() {
   const router = useRouter()
@@ -51,9 +51,9 @@ export function DisconnectGoogleCalendarButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Disconnect
-        </Button>
+        <button className="text-muted-foreground hover:text-foreground transition-colors p-1">
+          <X className="size-4" />
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

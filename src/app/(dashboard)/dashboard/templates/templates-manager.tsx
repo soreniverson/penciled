@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2, Plus, Trash2, FileText, Edit2, ChevronLeft } from 'lucide-react'
+import { Loader2, Plus, Trash2, Edit2, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { MeetingTemplate } from '@/types/database'
 
@@ -222,7 +222,7 @@ export function TemplatesManager({ initialTemplates }: Props) {
               </Button>
               <Button onClick={handleCreate} disabled={!name || saving}>
                 {saving && <Loader2 className="size-4 mr-2 animate-spin" />}
-                Create Template
+                Create
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -305,14 +305,11 @@ export function TemplatesManager({ initialTemplates }: Props) {
             <Card key={template.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileText className="size-5 text-muted-foreground" />
-                    <div>
-                      <CardTitle className="text-base">{template.name}</CardTitle>
-                      {template.description && (
-                        <p className="text-sm text-muted-foreground">{template.description}</p>
-                      )}
-                    </div>
+                  <div>
+                    <CardTitle className="text-base">{template.name}</CardTitle>
+                    {template.description && (
+                      <p className="text-sm text-muted-foreground">{template.description}</p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" onClick={() => openEditDialog(template)}>
@@ -336,13 +333,9 @@ export function TemplatesManager({ initialTemplates }: Props) {
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <FileText className="size-12 mx-auto mb-4 opacity-50" />
-            <p>No templates yet.</p>
-            <p className="text-sm">Create a template to standardize your meeting agendas.</p>
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No templates yet
+        </p>
       )}
     </div>
   )

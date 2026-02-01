@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2, Plus, Trash2, Mail, MessageSquare, Edit2, ChevronLeft } from 'lucide-react'
+import { Loader2, Plus, Trash2, Edit2, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { FollowUpTemplate } from '@/types/database'
 
@@ -337,7 +337,7 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
               </Button>
               <Button onClick={handleCreate} disabled={!name || !content || saving}>
                 {saving && <Loader2 className="size-4 mr-2 animate-spin" />}
-                Create Template
+                Create
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -377,23 +377,16 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
               <Card key={template.id} className={!template.is_active ? 'opacity-60' : ''}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {template.type === 'email' ? (
-                        <Mail className="size-5 text-muted-foreground" />
-                      ) : (
-                        <MessageSquare className="size-5 text-muted-foreground" />
-                      )}
-                      <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          {template.name}
-                          {!template.is_active && (
-                            <span className="text-xs bg-muted px-2 py-0.5 rounded">Inactive</span>
-                          )}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {template.type === 'email' ? 'Email' : 'Feedback Request'} · Sends {formatDelay(template.delay_minutes)} after meeting
-                        </p>
-                      </div>
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {template.name}
+                        {!template.is_active && (
+                          <span className="text-xs bg-muted px-2 py-0.5 rounded">Inactive</span>
+                        )}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {template.type === 'email' ? 'Email' : 'Feedback Request'} · Sends {formatDelay(template.delay_minutes)} after meeting
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={() => openEditDialog(template)}>
@@ -430,13 +423,9 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
           })}
         </div>
       ) : (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <Mail className="size-12 mx-auto mb-4 opacity-50" />
-            <p>No follow-up templates yet.</p>
-            <p className="text-sm">Create a template to automatically send follow-ups after meetings.</p>
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No follow-ups yet
+        </p>
       )}
     </div>
   )

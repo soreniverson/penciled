@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2, Plus, Trash2, Users, UserPlus, ChevronLeft } from 'lucide-react'
+import { Loader2, Plus, Trash2, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
 type PoolMember = {
@@ -61,6 +61,7 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
   const [showAddMemberDialog, setShowAddMemberDialog] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [addingMember, setAddingMember] = useState(false)
+  const [deletingPoolId, setDeletingPoolId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Create pool form state
@@ -109,6 +110,8 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
   const handleDeletePool = async (poolId: string) => {
     if (!confirm('Are you sure you want to delete this pool?')) return
 
+    setDeletingPoolId(poolId)
+
     try {
       const response = await fetch(`/api/pools/${poolId}`, { method: 'DELETE' })
 
@@ -117,6 +120,8 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
       }
     } catch {
       // Silent fail
+    } finally {
+      setDeletingPoolId(null)
     }
   }
 
@@ -206,7 +211,7 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
                 Create a pool of team members for flexible scheduling
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input
@@ -251,7 +256,7 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
               </Button>
               <Button onClick={handleCreatePool} disabled={!newPoolName || creating}>
                 {creating && <Loader2 className="size-4 mr-2 animate-spin" />}
-                Create Pool
+                Create
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -261,26 +266,21 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
       {/* Owned Pools */}
       {ownedPools.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">My Pools</h2>
           {ownedPools.map((pool) => (
             <Card key={pool.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Users className="size-5 text-muted-foreground" />
-                    <div>
-                      <CardTitle className="text-base">{pool.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {POOL_TYPE_LABELS[pool.pool_type]} · {pool.resource_pool_members?.length || 0} members
-                      </p>
-                    </div>
+                  <div>
+                    <CardTitle className="text-base">{pool.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {POOL_TYPE_LABELS[pool.pool_type]} · {pool.resource_pool_members?.length || 0} members
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     <Dialog open={showAddMemberDialog === pool.id} onOpenChange={(open) => setShowAddMemberDialog(open ? pool.id : null)}>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <UserPlus className="size-4 mr-1" />
-                          Add
+                        <Button variant="outline" size="icon">
+                          <Plus className="size-4" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -290,7 +290,7 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
                             Add a team member to {pool.name}
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
+                        <div className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="email">Email address</Label>
                             <Input
@@ -321,13 +321,22 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
                           </Button>
                           <Button onClick={() => handleAddMember(pool.id)} disabled={!newMemberEmail || addingMember}>
                             {addingMember && <Loader2 className="size-4 mr-2 animate-spin" />}
-                            Add Member
+                            Add
                           </Button>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeletePool(pool.id)}>
-                      <Trash2 className="size-4 text-destructive" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeletePool(pool.id)}
+                      disabled={deletingPoolId === pool.id}
+                    >
+                      {deletingPoolId === pool.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4 text-destructive" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -372,14 +381,11 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
           {memberPools.map((pool) => (
             <Card key={pool.id}>
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Users className="size-5 text-muted-foreground" />
-                  <div>
-                    <CardTitle className="text-base">{pool.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {POOL_TYPE_LABELS[pool.pool_type]} · Owned by {pool.owner?.name || pool.owner?.email || 'Unknown'}
-                    </p>
-                  </div>
+                <div>
+                  <CardTitle className="text-base">{pool.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {POOL_TYPE_LABELS[pool.pool_type]} · Owned by {pool.owner?.name || pool.owner?.email || 'Unknown'}
+                  </p>
                 </div>
               </CardHeader>
             </Card>
@@ -388,13 +394,9 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
       )}
 
       {ownedPools.length === 0 && memberPools.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <Users className="size-12 mx-auto mb-4 opacity-50" />
-            <p>No resource pools yet.</p>
-            <p className="text-sm">Create a pool to enable flexible team scheduling.</p>
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No pools yet
+        </p>
       )}
     </div>
   )

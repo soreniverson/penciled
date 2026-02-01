@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Loader2, Plus, Trash2, Users, UserCheck, ChevronLeft } from 'lucide-react'
+import { Loader2, Plus, Trash2, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { DelegatePermissions } from '@/types/database'
 
@@ -49,13 +49,13 @@ const DEFAULT_PERMISSIONS: DelegatePermissions = {
   override_conflicts: false,
 }
 
-const PERMISSION_LABELS: Record<keyof DelegatePermissions, { label: string; description: string }> = {
-  view: { label: 'View bookings', description: 'Can see your bookings and calendar' },
-  book: { label: 'Create bookings', description: 'Can book meetings on your behalf' },
-  reschedule: { label: 'Reschedule bookings', description: 'Can change booking times' },
-  cancel: { label: 'Cancel bookings', description: 'Can cancel your bookings' },
-  override_availability: { label: 'Override availability', description: 'Can book outside your normal hours' },
-  override_conflicts: { label: 'Override conflicts', description: 'Can book over existing meetings' },
+const PERMISSION_LABELS: Record<keyof DelegatePermissions, string> = {
+  view: 'View',
+  book: 'Create',
+  reschedule: 'Reschedule',
+  cancel: 'Cancel',
+  override_availability: 'Availability',
+  override_conflicts: 'Conflicts',
 }
 
 export function DelegatesManager({ initialDelegates, initialPrincipals }: Props) {
@@ -158,85 +158,74 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
             <ChevronLeft className="size-4" />
           </Button>
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Delegates</h1>
+        <h1 className="text-2xl font-semibold tracking-tight flex-1">Delegates</h1>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Plus className="size-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Delegate</DialogTitle>
+              <DialogDescription>
+                Give someone permission to manage your bookings
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="assistant@example.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  They must have a penciled.fyi account
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Label>Permissions</Label>
+                {(Object.keys(PERMISSION_LABELS) as (keyof DelegatePermissions)[]).map((perm) => (
+                  <div key={perm} className="flex items-center justify-between">
+                    <span className="text-sm">{PERMISSION_LABELS[perm]}</span>
+                    <Switch
+                      checked={newPermissions[perm]}
+                      onCheckedChange={(checked) =>
+                        setNewPermissions({ ...newPermissions, [perm]: checked })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddDelegate} disabled={!newEmail || adding}>
+                {adding && <Loader2 className="size-4 mr-2 animate-spin" />}
+                Add
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* My Delegates */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Users className="size-5 text-muted-foreground" />
-              <CardTitle className="text-base">My Delegates</CardTitle>
-            </div>
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="size-4 mr-1" />
-                  Add Delegate
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Delegate</DialogTitle>
-                  <DialogDescription>
-                    Give someone permission to manage your bookings
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="assistant@example.com"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      They must have a penciled.fyi account
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    <Label>Permissions</Label>
-                    {(Object.keys(PERMISSION_LABELS) as (keyof DelegatePermissions)[]).map((perm) => (
-                      <div key={perm} className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">{PERMISSION_LABELS[perm].label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {PERMISSION_LABELS[perm].description}
-                          </p>
-                        </div>
-                        <Switch
-                          checked={newPermissions[perm]}
-                          onCheckedChange={(checked) =>
-                            setNewPermissions({ ...newPermissions, [perm]: checked })
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  {error && (
-                    <p className="text-sm text-destructive">{error}</p>
-                  )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddDelegate} disabled={!newEmail || adding}>
-                    {adding && <Loader2 className="size-4 mr-2 animate-spin" />}
-                    Add Delegate
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <CardTitle className="text-base">My Delegates</CardTitle>
         </CardHeader>
         <CardContent>
           {delegates.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No delegates yet. Add someone to help manage your bookings.
+              No delegates yet
             </p>
           ) : (
             <div className="space-y-4">
@@ -271,7 +260,7 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
                           disabled={updatingId === delegate.id}
                           className="scale-75"
                         />
-                        <span className="text-xs">{PERMISSION_LABELS[perm].label}</span>
+                        <span className="text-xs">{PERMISSION_LABELS[perm]}</span>
                       </div>
                     ))}
                   </div>
@@ -285,15 +274,12 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
       {/* Delegated To Me */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <UserCheck className="size-5 text-muted-foreground" />
-            <CardTitle className="text-base">Delegated to Me</CardTitle>
-          </div>
+          <CardTitle className="text-base">Delegated to Me</CardTitle>
         </CardHeader>
         <CardContent>
           {principals.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No one has delegated their calendar to you.
+              None designated
             </p>
           ) : (
             <div className="space-y-3">
@@ -311,7 +297,7 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
                           key={perm}
                           className="text-xs bg-muted px-2 py-0.5 rounded"
                         >
-                          {PERMISSION_LABELS[perm].label}
+                          {PERMISSION_LABELS[perm]}
                         </span>
                       ))}
                   </div>

@@ -123,21 +123,21 @@ export default async function BookingsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
-                      <span>{format(new Date(booking.start_time), 'h:mm a')} – {format(new Date(booking.end_time), 'h:mm a')}</span>
-                      <span className="flex items-center gap-1">
-                        <User className="size-3.5" />
-                        {booking.client_name}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Mail className="size-3.5" />
-                        {booking.client_email}
-                      </span>
+                    <div className="text-sm text-muted-foreground mt-1.5 space-y-1">
+                      <p>{format(new Date(booking.start_time), 'h:mm a')} – {format(new Date(booking.end_time), 'h:mm a')}</p>
+                      <p className="flex items-center gap-1 truncate">
+                        <User className="size-3.5 shrink-0" />
+                        <span className="truncate">{booking.client_name}</span>
+                      </p>
+                      <p className="flex items-center gap-1 truncate">
+                        <Mail className="size-3.5 shrink-0" />
+                        <span className="truncate">{booking.client_email}</span>
+                      </p>
                       {booking.client_phone && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="size-3.5" />
+                        <p className="flex items-center gap-1">
+                          <Phone className="size-3.5 shrink-0" />
                           {booking.client_phone}
-                        </span>
+                        </p>
                       )}
                     </div>
                     {booking.notes && (
