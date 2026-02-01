@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { DashboardNav } from './nav'
+import { RelayFeedback } from '@/components/relay-feedback'
 
 export default async function DashboardLayout({
   children,
@@ -32,6 +33,9 @@ export default async function DashboardLayout({
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 sm:hidden">
         <DashboardNav />
       </div>
+
+      {/* Feedback Widget */}
+      <RelayFeedback />
     </div>
   )
 }
