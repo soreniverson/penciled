@@ -13,7 +13,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: "penciled.fyi - Simple Booking for Independent Providers",
+    default: "penciled.fyi - Simple team calendar management",
     template: "%s | penciled.fyi",
   },
   description:
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   authors: [{ name: "penciled.fyi" }],
   creator: "penciled.fyi",
   openGraph: {
-    title: "penciled.fyi - Simple Booking for Independent Providers",
+    title: "penciled.fyi - Simple team calendar management",
     description:
       "A beautifully designed booking tool where providers set their availability, clients book appointments, and everyone gets notified.",
     url: "/",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "penciled.fyi - Simple Booking for Independent Providers",
+    title: "penciled.fyi - Simple team calendar management",
     description:
       "A beautifully designed booking tool where providers set their availability, clients book appointments, and everyone gets notified.",
     images: ["/og-image.png"],
