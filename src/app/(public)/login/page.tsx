@@ -7,14 +7,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import { Loader2, ArrowRight, Check } from 'lucide-react'
+
+const isDev = process.env.NODE_ENV === 'development'
 
 type Step = 'email' | 'signin' | 'request' | 'requested'
 
 function LoginContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const redirect = searchParams.get('redirect') || '/dashboard'
   const error = searchParams.get('error')
 
@@ -22,6 +25,33 @@ function LoginContent() {
   const [step, setStep] = useState<Step>('email')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [devLoading, setDevLoading] = useState(false)
+
+  // Dev-only: bypass OAuth and log in directly
+  const handleDevLogin = async () => {
+    if (!email.trim()) return
+    setDevLoading(true)
+    setErrorMsg(null)
+
+    try {
+      const res = await fetch('/api/auth/dev-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        router.push(data.redirectTo || '/dashboard')
+      } else {
+        setErrorMsg(data.error || 'Dev login failed')
+      }
+    } catch {
+      setErrorMsg('Dev login failed')
+    } finally {
+      setDevLoading(false)
+    }
+  }
 
   const handleCheckEmail = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -198,6 +228,24 @@ function LoginContent() {
             >
               Use a different email
             </button>
+
+            {/* Dev-only login bypass */}
+            {isDev && (
+              <div className="pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDevLogin}
+                  disabled={devLoading}
+                >
+                  {devLoading ? (
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                  ) : null}
+                  Dev Login (skip waitlist)
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -259,6 +307,27 @@ function LoginContent() {
               Privacy Policy
             </Link>
           </p>
+
+          {/* Dev-only login bypass */}
+          {isDev && email.trim() && (
+            <div className="pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleDevLogin}
+                disabled={devLoading}
+              >
+                {devLoading ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : null}
+                Dev Login (skip OAuth)
+              </Button>
+              <p className="text-center text-xs text-muted-foreground mt-2">
+                Development only - bypasses Google OAuth
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

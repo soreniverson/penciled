@@ -21,4 +21,9 @@ INSERT INTO allowed_emails (email) VALUES
   ('david@iverson.inc'),
   ('patricia@iverson.inc'),
   ('kyle@iverson.inc'),
-  ('levi@iverson.inc');
+  ('levi@iverson.inc'),
+  ('meagan@iverson.inc'),
+  ('gwynne@iverson.inc'),
+  ('sam@iverson.inc'),
+  ('troy@iverson.inc')
+ON CONFLICT (email) DO NOTHING;
