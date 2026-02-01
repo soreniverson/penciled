@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getTokensFromCode } from '@/lib/google-calendar'
+import { getTokensFromCode, registerCalendarWatch } from '@/lib/google-calendar'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -51,6 +51,11 @@ export async function GET(request: Request) {
         `${baseUrl}/dashboard/settings/integrations?error=save_failed`
       )
     }
+
+    // Register calendar watch for push notifications (async, don't block)
+    registerCalendarWatch(user.id).catch(err => {
+      console.error('Failed to register calendar watch:', err)
+    })
 
     return NextResponse.redirect(
       `${baseUrl}/dashboard/settings/integrations?success=google_connected`

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -23,18 +22,12 @@ export function DisconnectGoogleCalendarButton() {
     setLoading(true)
 
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const response = await fetch('/api/auth/google-calendar/disconnect', {
+        method: 'POST',
+      })
 
-      if (user) {
-        await supabase
-          .from('providers')
-          // @ts-ignore - Supabase types not inferring correctly
-          .update({
-            google_calendar_token: null,
-            google_calendar_id: null,
-          })
-          .eq('id', user.id)
+      if (!response.ok) {
+        throw new Error('Failed to disconnect')
       }
 
       setOpen(false)

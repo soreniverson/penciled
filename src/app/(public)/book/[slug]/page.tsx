@@ -27,9 +27,36 @@ export async function generateMetadata({ params }: Props) {
     return { title: 'Not Found' }
   }
 
+  const title = `Book with ${provider.business_name}`
+  const description = `Schedule an appointment with ${provider.business_name}`
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const bookingUrl = `${APP_URL}/book/${slug}`
+  const ogImageUrl = `${APP_URL}/api/og?name=${encodeURIComponent(provider.business_name || provider.name || 'Provider')}`
+
   return {
-    title: `Book with ${provider.business_name}`,
-    description: `Schedule an appointment with ${provider.business_name}`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: bookingUrl,
+      siteName: 'penciled.fyi',
+      type: 'website',
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImageUrl],
+    },
   }
 }
 
