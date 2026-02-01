@@ -312,9 +312,7 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground block">Unavailable</span>
-                )}
+                ) : null}
               </div>
             </div>
           ))}
