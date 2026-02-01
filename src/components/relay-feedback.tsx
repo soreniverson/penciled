@@ -12,8 +12,10 @@ declare global {
 
 export function RelayFeedback() {
   useEffect(() => {
-    // Don't load if already loaded
-    if (window.Relay) return
+    // Don't load if script already exists
+    if (document.querySelector('script[src="https://relay-rouge.vercel.app/sdk/relay.min.js"]')) {
+      return
+    }
 
     const script = document.createElement('script')
     script.src = 'https://relay-rouge.vercel.app/sdk/relay.min.js'
@@ -24,16 +26,7 @@ export function RelayFeedback() {
       })
     }
     document.head.appendChild(script)
-
-    return () => {
-      // Cleanup on unmount if needed
-      const existingScript = document.querySelector(
-        'script[src="https://relay-rouge.vercel.app/sdk/relay.min.js"]'
-      )
-      if (existingScript) {
-        existingScript.remove()
-      }
-    }
+    // No cleanup - Relay should persist across navigation
   }, [])
 
   return null
