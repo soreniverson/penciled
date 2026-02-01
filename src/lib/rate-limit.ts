@@ -37,6 +37,7 @@ export const RATE_LIMITS = {
   approve: { windowMs: 60000, maxRequests: 20 },     // 20 approvals per minute
   decline: { windowMs: 60000, maxRequests: 20 },     // 20 declines per minute
   complete: { windowMs: 60000, maxRequests: 20 },    // 20 completions per minute
+  slots: { windowMs: 60000, maxRequests: 30 },       // 30 slot queries per minute (public endpoint)
 } as const
 
 export type RateLimitAction = keyof typeof RATE_LIMITS

@@ -3,6 +3,7 @@ import { generateTimeSlots } from '@/lib/availability'
 import { startOfDay, endOfDay } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import type { Meeting, Booking } from '@/types/database'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 // Import from the new cached data layer
 import {
@@ -16,6 +17,10 @@ import {
 } from '@/lib/data'
 
 export async function GET(request: Request) {
+  // Rate limit public endpoint
+  const rateLimitResponse = await checkRateLimit(request, 'slots')
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const { searchParams } = new URL(request.url)
     const providerId = searchParams.get('provider_id')

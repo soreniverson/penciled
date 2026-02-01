@@ -201,7 +201,6 @@ export async function createZoomMeeting(
         type: 2, // Scheduled meeting
         start_time: startTime.toISOString(),
         duration: durationMinutes,
-        timezone: 'UTC',
         agenda: booking.notes || `Meeting booked via penciled.fyi`,
         settings: {
           host_video: true,

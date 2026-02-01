@@ -3,6 +3,29 @@ import { formatInTimeZone } from 'date-fns-tz'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+// HTML escape to prevent XSS in email templates
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+// Sanitize URL to prevent javascript: and data: protocols
+function sanitizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return '#'
+    }
+    return url
+  } catch {
+    return '#'
+  }
+}
+
 // Helper to get timezone abbreviation (e.g., "PST", "EST")
 function getTimezoneAbbr(timezone: string): string {
   try {
@@ -44,10 +67,16 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
   const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
-  const meetingLinkHtml = meetingLink ? `
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+  const safeMeetingLink = meetingLink ? sanitizeUrl(meetingLink) : null
+
+  const meetingLinkHtml = safeMeetingLink ? `
           <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
-            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+            <a href="${safeMeetingLink}" style="color: #1d4ed8; word-break: break-all;">${escapeHtml(safeMeetingLink)}</a>
           </div>
   ` : ''
 
@@ -55,7 +84,7 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Booking confirmed with ${providerName}`,
+      subject: `Booking confirmed with ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -66,15 +95,15 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData) {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Confirmed</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
           <p style="margin-bottom: 24px;">Your appointment has been confirmed.</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
           </div>
 
           ${meetingLinkHtml}
@@ -109,11 +138,17 @@ export async function sendBookingNotificationToProvider(data: BookingEmailData) 
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
+  // Escape user-controlled values
+  const safeProviderName = escapeHtml(providerName || '')
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeNotes = notes ? escapeHtml(notes) : null
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `New booking: ${meetingName} with ${clientName}`,
+      subject: `New booking: ${safeMeetingName} with ${safeClientName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -124,21 +159,21 @@ export async function sendBookingNotificationToProvider(data: BookingEmailData) 
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">New Booking</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${providerName?.split(' ')[0] || 'there'},</p>
+          <p style="margin-bottom: 24px;">Hi ${escapeHtml(safeProviderName?.split(' ')[0] || 'there')},</p>
 
           <p style="margin-bottom: 24px;">You have a new booking!</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
-            <p style="margin: 0;"><strong>Email:</strong> ${clientEmail}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${safeClientName}</p>
+            <p style="margin: 0;"><strong>Email:</strong> ${escapeHtml(clientEmail)}</p>
           </div>
-          ${notes ? `
+          ${safeNotes ? `
           <div style="background: #fef3c7; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0; font-size: 14px;"><strong>Notes from client:</strong></p>
-            <p style="margin: 8px 0 0 0; font-size: 14px;">${notes}</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">${safeNotes}</p>
           </div>
           ` : ''}
           <p style="margin-bottom: 16px;">
@@ -172,11 +207,17 @@ export async function sendCancellationEmailToClient(data: BookingEmailData & { r
   const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
 
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+  const safeReason = reason ? escapeHtml(reason) : null
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Booking cancelled with ${providerName}`,
+      subject: `Booking cancelled with ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -187,16 +228,16 @@ export async function sendCancellationEmailToClient(data: BookingEmailData & { r
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Cancelled</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
           <p style="margin-bottom: 24px;">Your appointment has been cancelled.</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
-            ${reason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${reason}</p>` : ''}
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
+            ${safeReason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${safeReason}</p>` : ''}
           </div>
 
           <p style="margin-bottom: 24px;">
@@ -228,11 +269,16 @@ export async function sendBookingRequestToClient(data: BookingEmailData) {
   const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Booking request sent to ${providerName}`,
+      subject: `Booking request sent to ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -243,16 +289,16 @@ export async function sendBookingRequestToClient(data: BookingEmailData) {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Request Sent</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
-          <p style="margin-bottom: 24px;">Your booking request has been sent to ${providerName}. You'll receive an email once they confirm.</p>
+          <p style="margin-bottom: 24px;">Your booking request has been sent to ${safeProviderName}. You'll receive an email once they confirm.</p>
 
           <div style="background: #fef3c7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
             <p style="margin: 0 0 12px 0;"><strong>Status:</strong> Pending confirmation</p>
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
           </div>
 
           <p style="margin-bottom: 24px;">
@@ -284,11 +330,17 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
+  // Escape user-controlled values
+  const safeProviderName = escapeHtml(providerName || '')
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeNotes = notes ? escapeHtml(notes) : null
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Booking request: ${meetingName} with ${clientName}`,
+      subject: `Booking request: ${safeMeetingName} with ${safeClientName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -299,21 +351,21 @@ export async function sendBookingRequestToProvider(data: BookingEmailData) {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">New Booking Request</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${providerName?.split(' ')[0] || 'there'},</p>
+          <p style="margin-bottom: 24px;">Hi ${escapeHtml(safeProviderName?.split(' ')[0] || 'there')},</p>
 
           <p style="margin-bottom: 24px;">You have a new booking request that needs your approval.</p>
 
           <div style="background: #fef3c7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
-            <p style="margin: 0;"><strong>Email:</strong> ${clientEmail}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${safeClientName}</p>
+            <p style="margin: 0;"><strong>Email:</strong> ${escapeHtml(clientEmail)}</p>
           </div>
-          ${notes ? `
+          ${safeNotes ? `
           <div style="background: #f5f5f4; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0; font-size: 14px;"><strong>Notes from client:</strong></p>
-            <p style="margin: 8px 0 0 0; font-size: 14px;">${notes}</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">${safeNotes}</p>
           </div>
           ` : ''}
           <p style="margin-bottom: 16px;">
@@ -348,10 +400,16 @@ export async function sendBookingApprovalToClient(data: BookingEmailData) {
   const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
-  const meetingLinkHtml = meetingLink ? `
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+  const safeMeetingLink = meetingLink ? sanitizeUrl(meetingLink) : null
+
+  const meetingLinkHtml = safeMeetingLink ? `
           <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
-            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+            <a href="${safeMeetingLink}" style="color: #1d4ed8; word-break: break-all;">${escapeHtml(safeMeetingLink)}</a>
           </div>
   ` : ''
 
@@ -359,7 +417,7 @@ export async function sendBookingApprovalToClient(data: BookingEmailData) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Booking confirmed with ${providerName}`,
+      subject: `Booking confirmed with ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -370,15 +428,15 @@ export async function sendBookingApprovalToClient(data: BookingEmailData) {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Confirmed!</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
           <p style="margin-bottom: 24px;">Great news! Your booking request has been approved.</p>
 
           <div style="background: #dcfce7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
           </div>
 
           ${meetingLinkHtml}
@@ -411,11 +469,17 @@ export async function sendBookingDeclinedToClient(data: BookingEmailData & { rea
   const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
 
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+  const safeReason = reason ? escapeHtml(reason) : null
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Booking request declined by ${providerName}`,
+      subject: `Booking request declined by ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -426,16 +490,16 @@ export async function sendBookingDeclinedToClient(data: BookingEmailData & { rea
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Request Declined</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
           <p style="margin-bottom: 24px;">Unfortunately, your booking request could not be confirmed at this time.</p>
 
           <div style="background: #fef2f2; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
-            ${reason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${reason}</p>` : ''}
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
+            ${safeReason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${safeReason}</p>` : ''}
           </div>
 
           <p style="margin-bottom: 24px;">
@@ -465,11 +529,17 @@ export async function sendCancellationEmailToProvider(data: BookingEmailData & {
   const formattedDate = formatInTimeZone(startTime, timezone, 'EEEE, MMMM d, yyyy')
   const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
 
+  // Escape user-controlled values
+  const safeProviderName = escapeHtml(providerName || '')
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeReason = reason ? escapeHtml(reason) : null
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Booking cancelled: ${meetingName} with ${clientName}`,
+      subject: `Booking cancelled: ${safeMeetingName} with ${safeClientName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -480,16 +550,16 @@ export async function sendCancellationEmailToProvider(data: BookingEmailData & {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Cancelled</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${providerName?.split(' ')[0] || 'there'},</p>
+          <p style="margin-bottom: 24px;">Hi ${escapeHtml(safeProviderName?.split(' ')[0] || 'there')},</p>
 
           <p style="margin-bottom: 24px;">A booking has been cancelled.</p>
 
           <div style="background: #f5f5f4; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Client:</strong> ${clientName}</p>
-            ${reason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${reason}</p>` : ''}
+            <p style="margin: 0;"><strong>Client:</strong> ${safeClientName}</p>
+            ${safeReason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${safeReason}</p>` : ''}
           </div>
 
           <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;">
@@ -524,14 +594,22 @@ export async function sendProviderRescheduleNotification(data: BookingEmailData 
   const formattedNewTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
-  const rescheduledByText = rescheduledByName && rescheduledByName !== providerName
-    ? ` by ${rescheduledByName} on behalf of ${providerName}`
-    : ` by ${providerName}`
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+  const safeRescheduledByName = rescheduledByName ? escapeHtml(rescheduledByName) : null
+  const safeReason = reason ? escapeHtml(reason) : null
+  const safeMeetingLink = meetingLink ? sanitizeUrl(meetingLink) : null
 
-  const meetingLinkHtml = meetingLink ? `
+  const rescheduledByText = safeRescheduledByName && safeRescheduledByName !== safeProviderName
+    ? ` by ${safeRescheduledByName} on behalf of ${safeProviderName}`
+    : ` by ${safeProviderName}`
+
+  const meetingLinkHtml = safeMeetingLink ? `
           <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
-            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+            <a href="${safeMeetingLink}" style="color: #1d4ed8; word-break: break-all;">${escapeHtml(safeMeetingLink)}</a>
           </div>
   ` : ''
 
@@ -539,7 +617,7 @@ export async function sendProviderRescheduleNotification(data: BookingEmailData 
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Booking rescheduled with ${providerName}`,
+      subject: `Booking rescheduled with ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -550,7 +628,7 @@ export async function sendProviderRescheduleNotification(data: BookingEmailData 
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Rescheduled</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
           <p style="margin-bottom: 24px;">Your appointment has been rescheduled${rescheduledByText}.</p>
 
@@ -559,11 +637,11 @@ export async function sendProviderRescheduleNotification(data: BookingEmailData 
           </div>
 
           <div style="background: #dcfce7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>New Date:</strong> ${formattedNewDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>New Time:</strong> ${formattedNewTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
-            ${reason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${reason}</p>` : ''}
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
+            ${safeReason ? `<p style="margin: 12px 0 0 0;"><strong>Reason:</strong> ${safeReason}</p>` : ''}
           </div>
 
           ${meetingLinkHtml}
@@ -603,11 +681,18 @@ export async function sendConflictOverrideNotification(data: BookingEmailData & 
   const formattedTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
 
+  // Escape user-controlled values
+  const safeProviderName = escapeHtml(providerName || '')
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeConflictingClientName = escapeHtml(conflictingClientName)
+  const safeOverrideByName = escapeHtml(overrideByName)
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Booking conflict override: ${meetingName}`,
+      subject: `Booking conflict override: ${safeMeetingName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -618,15 +703,15 @@ export async function sendConflictOverrideNotification(data: BookingEmailData & 
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Conflict Override</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${providerName?.split(' ')[0] || 'there'},</p>
+          <p style="margin-bottom: 24px;">Hi ${escapeHtml(safeProviderName?.split(' ')[0] || 'there')},</p>
 
-          <p style="margin-bottom: 24px;">${overrideByName} has created a booking that conflicts with an existing meeting.</p>
+          <p style="margin-bottom: 24px;">${safeOverrideByName} has created a booking that conflicts with an existing meeting.</p>
 
           <div style="background: #fef2f2; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>New Booking:</strong> ${meetingName} with ${clientName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>New Booking:</strong> ${safeMeetingName} with ${safeClientName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Conflicts with:</strong> Meeting with ${conflictingClientName}</p>
+            <p style="margin: 0;"><strong>Conflicts with:</strong> Meeting with ${safeConflictingClientName}</p>
           </div>
 
           <p style="margin-bottom: 24px;">
@@ -664,10 +749,16 @@ export async function sendReminderEmailToClient(data: BookingEmailData & { hours
 
   const timeLabel = hoursUntil === 24 ? 'tomorrow' : 'in 1 hour'
 
-  const meetingLinkHtml = meetingLink ? `
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+  const safeMeetingLink = meetingLink ? sanitizeUrl(meetingLink) : null
+
+  const meetingLinkHtml = safeMeetingLink ? `
           <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
-            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+            <a href="${safeMeetingLink}" style="color: #1d4ed8; word-break: break-all;">${escapeHtml(safeMeetingLink)}</a>
           </div>
   ` : ''
 
@@ -675,7 +766,7 @@ export async function sendReminderEmailToClient(data: BookingEmailData & { hours
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Reminder: Your appointment ${timeLabel} with ${providerName}`,
+      subject: `Reminder: Your appointment ${timeLabel} with ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -686,15 +777,15 @@ export async function sendReminderEmailToClient(data: BookingEmailData & { hours
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Appointment Reminder</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
           <p style="margin-bottom: 24px;">This is a friendly reminder about your upcoming appointment ${timeLabel}.</p>
 
           <div style="background: #e0f2fe; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
           </div>
 
           ${meetingLinkHtml}
@@ -731,11 +822,16 @@ export async function sendReminderEmailToProvider(data: BookingEmailData & { hou
 
   const timeLabel = hoursUntil === 24 ? 'tomorrow' : 'in 1 hour'
 
+  // Escape user-controlled values
+  const safeProviderName = escapeHtml(providerName || '')
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Reminder: ${meetingName} with ${clientName} ${timeLabel}`,
+      subject: `Reminder: ${safeMeetingName} with ${safeClientName} ${timeLabel}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -746,16 +842,16 @@ export async function sendReminderEmailToProvider(data: BookingEmailData & { hou
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Appointment Reminder</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${providerName?.split(' ')[0] || 'there'},</p>
+          <p style="margin-bottom: 24px;">Hi ${escapeHtml(safeProviderName?.split(' ')[0] || 'there')},</p>
 
           <p style="margin-bottom: 24px;">You have an appointment ${timeLabel}.</p>
 
           <div style="background: #e0f2fe; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>Date:</strong> ${formattedDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
-            <p style="margin: 0;"><strong>Email:</strong> ${clientEmail}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${safeClientName}</p>
+            <p style="margin: 0;"><strong>Email:</strong> ${escapeHtml(clientEmail)}</p>
           </div>
 
           <p style="margin-bottom: 16px;">
@@ -796,10 +892,16 @@ export async function sendClientRescheduleConfirmation(data: BookingEmailData & 
   const formattedNewTime = `${formatInTimeZone(startTime, timezone, 'h:mm a')} - ${formatInTimeZone(endTime, timezone, 'h:mm a')} (${tzAbbr})`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
-  const meetingLinkHtml = meetingLink ? `
+  // Escape user-controlled values
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+  const safeProviderName = escapeHtml(providerName)
+  const safeMeetingLink = meetingLink ? sanitizeUrl(meetingLink) : null
+
+  const meetingLinkHtml = safeMeetingLink ? `
           <div style="background: #dbeafe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0 0 8px 0; font-weight: 600;">Join Video Call</p>
-            <a href="${meetingLink}" style="color: #1d4ed8; word-break: break-all;">${meetingLink}</a>
+            <a href="${safeMeetingLink}" style="color: #1d4ed8; word-break: break-all;">${escapeHtml(safeMeetingLink)}</a>
           </div>
   ` : ''
 
@@ -807,7 +909,7 @@ export async function sendClientRescheduleConfirmation(data: BookingEmailData & 
     await resend.emails.send({
       from: FROM_EMAIL,
       to: clientEmail,
-      subject: `Booking rescheduled with ${providerName}`,
+      subject: `Booking rescheduled with ${safeProviderName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -818,7 +920,7 @@ export async function sendClientRescheduleConfirmation(data: BookingEmailData & 
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Rescheduled</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${clientName},</p>
+          <p style="margin-bottom: 24px;">Hi ${safeClientName},</p>
 
           <p style="margin-bottom: 24px;">Your appointment has been rescheduled to a new time.</p>
 
@@ -827,10 +929,10 @@ export async function sendClientRescheduleConfirmation(data: BookingEmailData & 
           </div>
 
           <div style="background: #dcfce7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>New Date:</strong> ${formattedNewDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>New Time:</strong> ${formattedNewTime}</p>
-            <p style="margin: 0;"><strong>Provider:</strong> ${providerName}</p>
+            <p style="margin: 0;"><strong>Provider:</strong> ${safeProviderName}</p>
           </div>
 
           ${meetingLinkHtml}
@@ -872,13 +974,18 @@ export async function sendRescheduleNotificationToProvider(data: BookingEmailDat
   const dashboardUrl = `${APP_URL}/dashboard/bookings`
   const manageUrl = `${APP_URL}/booking/${data.bookingId}/manage?token=${managementToken}`
 
-  const rescheduledByText = rescheduledBy === 'client' ? `${clientName} has` : 'This booking has been'
+  // Escape user-controlled values
+  const safeProviderName = escapeHtml(providerName || '')
+  const safeClientName = escapeHtml(clientName)
+  const safeMeetingName = escapeHtml(meetingName)
+
+  const rescheduledByText = rescheduledBy === 'client' ? `${safeClientName} has` : 'This booking has been'
 
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: providerEmail,
-      subject: `Booking rescheduled: ${meetingName} with ${clientName}`,
+      subject: `Booking rescheduled: ${safeMeetingName} with ${safeClientName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -889,7 +996,7 @@ export async function sendRescheduleNotificationToProvider(data: BookingEmailDat
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Booking Rescheduled</h1>
 
-          <p style="margin-bottom: 24px;">Hi ${providerName?.split(' ')[0] || 'there'},</p>
+          <p style="margin-bottom: 24px;">Hi ${escapeHtml(safeProviderName?.split(' ')[0] || 'there')},</p>
 
           <p style="margin-bottom: 24px;">${rescheduledByText} rescheduled the following booking.</p>
 
@@ -898,11 +1005,11 @@ export async function sendRescheduleNotificationToProvider(data: BookingEmailDat
           </div>
 
           <div style="background: #dcfce7; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${meetingName}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Meeting:</strong> ${safeMeetingName}</p>
             <p style="margin: 0 0 12px 0;"><strong>New Date:</strong> ${formattedNewDate}</p>
             <p style="margin: 0 0 12px 0;"><strong>New Time:</strong> ${formattedNewTime}</p>
-            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${clientName}</p>
-            <p style="margin: 0;"><strong>Email:</strong> ${clientEmail}</p>
+            <p style="margin: 0 0 12px 0;"><strong>Client:</strong> ${safeClientName}</p>
+            <p style="margin: 0;"><strong>Email:</strong> ${escapeHtml(clientEmail)}</p>
           </div>
 
           <p style="margin-bottom: 16px;">

@@ -71,14 +71,16 @@ export async function GET() {
       },
       meetings: meetingsResult.data || [],
       availability: availabilityResult.data || [],
-      bookings: (bookingsResult.data || []).map(booking => ({
-        ...booking,
-        // Mask sensitive client data partially
-        client_email: booking.client_email ?
-          booking.client_email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null,
-        // Include management_token for reference
-        management_token: booking.management_token,
-      })),
+      bookings: (bookingsResult.data || []).map(booking => {
+        // Remove sensitive fields from export
+        const { management_token, google_event_id, zoom_meeting_id, ...safeBooking } = booking
+        return {
+          ...safeBooking,
+          // Mask sensitive client data partially
+          client_email: booking.client_email ?
+            booking.client_email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null,
+        }
+      }),
     }
 
     // Return as downloadable JSON
