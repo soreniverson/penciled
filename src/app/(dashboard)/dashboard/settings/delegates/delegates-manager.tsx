@@ -9,7 +9,6 @@ import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -168,9 +167,6 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Delegate</DialogTitle>
-              <DialogDescription>
-                Give someone permission to manage your bookings
-              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">

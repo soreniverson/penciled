@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -60,9 +59,6 @@ export function CancelBookingButton({ bookingId, clientName }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Cancel booking?</DialogTitle>
-          <DialogDescription>
-            {clientName.split(' ')[0]} will be notified by email.
-          </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <Label htmlFor="reason">Reason (optional)</Label>

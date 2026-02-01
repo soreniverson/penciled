@@ -265,15 +265,13 @@ export function SettingsForm({ provider: initialProvider }: Props) {
             <div className="flex-1 min-w-0 space-y-1">
               <p className="font-medium truncate">{currentName || 'No name set'}</p>
               <p className="text-sm text-muted-foreground truncate">{initialProvider.email}</p>
-              {currentBusinessName && (
-                <p className="text-sm text-muted-foreground truncate">{currentBusinessName}</p>
+              {(currentBusinessName || currentSlug) && (
+                <p className="text-sm text-muted-foreground truncate">
+                  {currentBusinessName}
+                  {currentBusinessName && currentSlug && <span className="mx-1.5">·</span>}
+                  {currentSlug && <>penciled.fyi/{currentSlug}</>}
+                </p>
               )}
-              <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
-                {currentSlug && (
-                  <span className="truncate">penciled.fyi/{currentSlug}</span>
-                )}
-                <span className="truncate">{currentTimezone?.replace(/_/g, ' ')}</span>
-              </div>
             </div>
           </div>
         </CardContent>

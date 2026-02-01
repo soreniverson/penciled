@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -58,10 +57,6 @@ export function DisconnectGoogleCalendarButton() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Disconnect Google Calendar?</DialogTitle>
-          <DialogDescription>
-            New bookings will no longer sync to your calendar, and we won&apos;t be
-            able to check for conflicts with your existing events.
-          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>

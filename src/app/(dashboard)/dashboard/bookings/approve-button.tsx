@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -61,9 +60,6 @@ export function ApproveBookingButton({ bookingId, clientName }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Approve booking?</DialogTitle>
-          <DialogDescription>
-            {clientName.split(' ')[0]} will be notified by email.
-          </DialogDescription>
         </DialogHeader>
         {error && (
           <p className="text-sm text-destructive">{error}</p>
@@ -125,9 +121,6 @@ export function DeclineBookingButton({ bookingId, clientName }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Decline booking request?</DialogTitle>
-          <DialogDescription>
-            {clientName.split(' ')[0]} will be notified by email.
-          </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <Label htmlFor="reason">Reason (optional)</Label>

@@ -11,7 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -227,9 +226,6 @@ export function QuickBookDialog({ providerId, principalId, children }: Props) {
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Quick Book</DialogTitle>
-            <DialogDescription>
-              Create a booking on behalf of a client
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">

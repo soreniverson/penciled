@@ -15,7 +15,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -207,9 +206,6 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Resource Pool</DialogTitle>
-              <DialogDescription>
-                Create a pool of team members for flexible scheduling
-              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -286,9 +282,6 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Add Member</DialogTitle>
-                          <DialogDescription>
-                            Add a team member to {pool.name}
-                          </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">

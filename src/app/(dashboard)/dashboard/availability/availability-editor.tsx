@@ -254,8 +254,8 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
       <Card>
         <CardContent className="py-4 space-y-1">
           {DAYS.map((day) => (
-            <div key={day.value} className="flex items-start gap-4 py-3">
-              <div className="flex items-center gap-3 w-32 shrink-0 pt-1">
+            <div key={day.value} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 py-3">
+              <div className="flex items-center gap-3 sm:w-32 shrink-0 sm:pt-1">
                 <Switch
                   checked={availability[day.value].enabled}
                   onCheckedChange={(checked) => toggleDay(day.value, checked)}
@@ -265,14 +265,14 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
                 </span>
               </div>
 
-              <div className="flex-1">
+              <div className="flex-1 pl-9 sm:pl-0">
                 {availability[day.value].enabled ? (
                   <div className="space-y-3">
                     {availability[day.value].windows.map((window, windowIndex) => (
-                      <div key={windowIndex} className="flex items-center gap-3">
+                      <div key={windowIndex} className="flex items-center gap-2 sm:gap-3">
                         <Input
                           type="time"
-                          className="w-[130px]"
+                          className="w-[110px] sm:w-[130px]"
                           value={window.startTime}
                           onChange={(e) =>
                             updateWindow(day.value, windowIndex, { startTime: e.target.value })
@@ -281,7 +281,7 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
                         <span className="text-muted-foreground text-sm">to</span>
                         <Input
                           type="time"
-                          className="w-[130px]"
+                          className="w-[110px] sm:w-[130px]"
                           value={window.endTime}
                           onChange={(e) =>
                             updateWindow(day.value, windowIndex, { endTime: e.target.value })
@@ -313,7 +313,7 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
                     ))}
                   </div>
                 ) : (
-                  <span className="text-sm text-muted-foreground pt-1 block">Unavailable</span>
+                  <span className="text-sm text-muted-foreground block">Unavailable</span>
                 )}
               </div>
             </div>

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Check, X, ChevronLeft } from 'lucide-react'
 import { DisconnectGoogleCalendarButton } from './disconnect-button'
 import { DisconnectZoomButton } from './disconnect-zoom-button'
@@ -81,46 +82,54 @@ export default async function IntegrationsPage({
       )}
 
       {/* Integrations List */}
-      <div className="space-y-1">
+      <div className="space-y-3">
         {/* Google Calendar */}
-        <div className="flex items-center justify-between py-3">
-          <span className="text-sm">Google Calendar</span>
-          {isGoogleConnected ? (
-            <div className="flex items-center gap-2">
-              <Check className="size-4 text-green-500" />
-              <DisconnectGoogleCalendarButton />
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Google Calendar</span>
+              {isGoogleConnected ? (
+                <div className="flex items-center gap-2">
+                  <Check className="size-4 text-green-500" />
+                  <DisconnectGoogleCalendarButton />
+                </div>
+              ) : (
+                <form action="/api/auth/google-calendar" method="GET">
+                  <button
+                    type="submit"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Connect
+                  </button>
+                </form>
+              )}
             </div>
-          ) : (
-            <form action="/api/auth/google-calendar" method="GET">
-              <button
-                type="submit"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Connect
-              </button>
-            </form>
-          )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Zoom */}
-        <div className="flex items-center justify-between py-3">
-          <span className="text-sm">Zoom</span>
-          {isZoomConnected ? (
-            <div className="flex items-center gap-2">
-              <Check className="size-4 text-green-500" />
-              <DisconnectZoomButton />
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Zoom</span>
+              {isZoomConnected ? (
+                <div className="flex items-center gap-2">
+                  <Check className="size-4 text-green-500" />
+                  <DisconnectZoomButton />
+                </div>
+              ) : (
+                <form action="/api/auth/zoom" method="GET">
+                  <button
+                    type="submit"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Connect
+                  </button>
+                </form>
+              )}
             </div>
-          ) : (
-            <form action="/api/auth/zoom" method="GET">
-              <button
-                type="submit"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Connect
-              </button>
-            </form>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

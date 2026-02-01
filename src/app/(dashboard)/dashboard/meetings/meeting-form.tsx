@@ -16,7 +16,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -43,15 +42,15 @@ const BUFFER_OPTIONS = [
 ]
 
 const BOOKING_MODE_OPTIONS = [
-  { value: 'instant', label: 'Instant booking', description: 'Clients are automatically confirmed' },
-  { value: 'request', label: 'Request booking', description: 'You approve each booking' },
+  { value: 'instant', label: 'Instant' },
+  { value: 'request', label: 'Request' },
 ]
 
 const VIDEO_PLATFORM_OPTIONS = [
-  { value: 'auto', label: 'Automatic', description: 'Uses Google Meet or Zoom based on your integrations' },
-  { value: 'google_meet', label: 'Google Meet', description: 'Always use Google Meet' },
-  { value: 'zoom', label: 'Zoom', description: 'Always use Zoom' },
-  { value: 'none', label: 'No video', description: 'In-person or phone meetings' },
+  { value: 'auto', label: 'Automatic' },
+  { value: 'google_meet', label: 'Google Meet' },
+  { value: 'zoom', label: 'Zoom' },
+  { value: 'none', label: 'No video' },
 ]
 
 type Props = {
@@ -174,9 +173,6 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Edit Meeting' : 'Add Meeting'}</DialogTitle>
-            <DialogDescription>
-              {isEditing ? 'Update the details of this meeting.' : 'Create a new meeting type for clients to book.'}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -231,7 +227,7 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Booking Mode</Label>
+              <Label>Mode</Label>
               <Select value={bookingMode} onValueChange={(v) => setBookingMode(v as 'instant' | 'request')}>
                 <SelectTrigger>
                   <SelectValue />
@@ -244,12 +240,9 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {bookingMode === 'instant' ? 'Clients are automatically confirmed' : 'You approve each booking request'}
-              </p>
             </div>
             <div className="space-y-2">
-              <Label>Video Platform</Label>
+              <Label>Video</Label>
               <Select value={videoPlatform} onValueChange={(v) => setVideoPlatform(v as typeof videoPlatform)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -271,9 +264,6 @@ export function MeetingForm({ providerId, meeting, children }: Props) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {VIDEO_PLATFORM_OPTIONS.find(o => o.value === videoPlatform)?.description}
-              </p>
             </div>
             {templates.length > 0 && (
               <div className="space-y-2">
