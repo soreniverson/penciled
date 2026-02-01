@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 declare global {
   interface Window {
     Relay?: {
-      init: (config: { apiKey: string; apiUrl: string }) => void
+      init: (config: { apiKey: string; endpoint: string }) => void
     }
   }
 }
@@ -22,7 +22,7 @@ export function RelayFeedback() {
     script.onload = () => {
       window.Relay?.init({
         apiKey: 'rly__mRYMVbmIu_JTKzbYT4nX1585jJ-ccHq',
-        apiUrl: 'https://api-production-6495.up.railway.app',
+        endpoint: 'https://api-production-6495.up.railway.app',
       })
     }
     document.head.appendChild(script)
