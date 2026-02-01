@@ -5,11 +5,11 @@ import type { NextConfig } from "next";
 // 'unsafe-eval' is needed for development hot reload (removed in production ideally)
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io https://relay-rouge.vercel.app;
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https: blob:;
   font-src 'self' data:;
-  connect-src 'self' https://*.supabase.co https://plausible.io https://api.resend.com;
+  connect-src 'self' https://*.supabase.co https://plausible.io https://api.resend.com https://api-production-6495.up.railway.app;
   frame-ancestors 'none';
   base-uri 'self';
   form-action 'self' https://accounts.google.com;
