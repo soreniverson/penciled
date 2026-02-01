@@ -22,7 +22,7 @@ export function RelayFeedback() {
     script.onload = () => {
       window.Relay?.init({
         apiKey: 'rly__mRYMVbmIu_JTKzbYT4nX1585jJ-ccHq',
-        apiUrl: 'https://relay-rouge.vercel.app/api/trpc',
+        apiUrl: 'https://api-production-6495.up.railway.app',
       })
     }
     document.head.appendChild(script)
