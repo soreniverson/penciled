@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { sendProviderRescheduleNotification } from '@/lib/email'
+import { sendProviderRescheduleNotification, sendRescheduleNotificationToProvider } from '@/lib/email'
 import { parseBody, providerRescheduleSchema, bookingIdSchema, validateParam } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { updateCalendarEvent, getCalendarBusyTimes } from '@/lib/google-calendar'
+import { updateZoomMeeting } from '@/lib/zoom'
 import { logApiError } from '@/lib/error-logger'
 import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
 
@@ -42,9 +43,10 @@ export async function POST(request: Request, { params }: RouteContext) {
       .from('bookings')
       .select(`
         id, management_token, google_event_id, provider_id, booking_link_id,
-        client_name, client_email, start_time, end_time, meeting_link,
+        zoom_meeting_id, client_name, client_email, start_time, end_time, meeting_link,
         providers:provider_id (id, name, business_name, email, timezone, google_calendar_token),
-        meetings:meeting_id (name)
+        meetings:meeting_id (name),
+        booking_links:booking_link_id (name)
       `)
       .eq('id', id)
       .single() as { data: {
@@ -53,6 +55,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         google_event_id: string | null
         provider_id: string
         booking_link_id: string | null
+        zoom_meeting_id: string | null
         client_name: string
         client_email: string
         start_time: string
@@ -60,6 +63,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         meeting_link: string | null
         providers: { id: string; name: string | null; business_name: string | null; email: string; timezone: string; google_calendar_token: unknown } | null
         meetings: { name: string } | null
+        booking_links: { name: string } | null
       } | null }
 
     if (!booking) {
@@ -174,40 +178,100 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Failed to reschedule' }, { status: 500 })
     }
 
-    // Update Google Calendar event if it exists
-    if (booking.google_event_id && booking.providers?.google_calendar_token) {
-      updateCalendarEvent(booking.provider_id, booking.google_event_id, {
-        start_time,
-        end_time,
-      }).catch(err => console.error('Calendar event update failed:', err))
+    // Get team members for team bookings
+    type TeamMember = {
+      id: string
+      name: string | null
+      business_name: string | null
+      email: string
+      timezone: string
+      google_calendar_token: unknown
     }
 
-    // Send reschedule notification to client
-    const provider = booking.providers
+    let teamMembers: TeamMember[] = []
+    let displayName = booking.booking_links?.name || booking.providers?.business_name || booking.providers?.name || 'Your provider'
+
+    if (booking.booking_link_id) {
+      // Fetch all required team members
+      const { data: members } = await supabase
+        .from('booking_link_members')
+        .select(`
+          provider_id,
+          providers:provider_id (id, name, business_name, email, timezone, google_calendar_token)
+        `)
+        .eq('booking_link_id', booking.booking_link_id)
+        .eq('is_required', true) as { data: { providers: TeamMember | TeamMember[] | null }[] | null }
+
+      if (members) {
+        teamMembers = members
+          .map((m) => {
+            const p = m.providers
+            return Array.isArray(p) ? p[0] : p
+          })
+          .filter((p): p is TeamMember => p !== null)
+      }
+    } else if (booking.providers) {
+      teamMembers = [booking.providers]
+    }
+
     const meeting = booking.meetings
 
-    if (provider && meeting) {
-      const emailData = {
+    if (meeting && teamMembers.length > 0) {
+      const primaryMember = teamMembers[0]
+
+      // Update calendar events for all team members with Google connected
+      if (booking.google_event_id) {
+        Promise.all(
+          teamMembers
+            .filter(member => member.google_calendar_token)
+            .map(member =>
+              updateCalendarEvent(member.id, booking.google_event_id!, {
+                start_time,
+                end_time,
+              }).catch(err => console.error(`Calendar update failed for ${member.email}:`, err))
+            )
+        ).catch(err => console.error('Calendar updates failed:', err))
+      }
+
+      // Update Zoom meeting if it exists
+      if (booking.zoom_meeting_id) {
+        updateZoomMeeting(primaryMember.id, booking.zoom_meeting_id, {
+          start_time,
+          end_time,
+        }).catch(err => console.error('Zoom meeting update failed:', err))
+      }
+
+      const baseEmailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
         meetingName: meeting.name,
-        providerName: provider.business_name || provider.name || 'Your provider',
-        providerEmail: provider.email,
+        providerName: displayName,
         clientName: booking.client_name,
         clientEmail: booking.client_email,
         startTime: new Date(start_time),
         endTime: new Date(end_time),
-        timezone: provider.timezone,
         oldStartTime: new Date(booking.start_time),
         oldEndTime: new Date(booking.end_time),
+        timezone: primaryMember.timezone,
         meetingLink: booking.meeting_link,
         reason: reason ?? undefined,
         rescheduledByName: reschedulerName ?? undefined,
       }
 
-      sendProviderRescheduleNotification(emailData).catch(err =>
-        console.error('Reschedule notification sending failed:', err)
-      )
+      // Send reschedule notification to client
+      sendProviderRescheduleNotification({ ...baseEmailData, providerEmail: primaryMember.email })
+        .catch(err => console.error('Client reschedule notification failed:', err))
+
+      // Notify all team members about the reschedule
+      Promise.all(
+        teamMembers.map(member =>
+          sendRescheduleNotificationToProvider({
+            ...baseEmailData,
+            providerEmail: member.email,
+            rescheduledBy: 'provider',
+          })
+        )
+      ).catch(err => console.error('Team reschedule notifications failed:', err))
     }
 
     return NextResponse.json({ success: true })

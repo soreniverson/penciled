@@ -1,9 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-import { sendBookingConfirmationToClient, sendBookingNotificationToProvider } from '@/lib/email'
+import { sendClientRescheduleConfirmation, sendRescheduleNotificationToProvider } from '@/lib/email'
 import { parseBody, rescheduleSchema, bookingIdSchema, validateParam } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { updateCalendarEvent } from '@/lib/google-calendar'
+import { updateZoomMeeting } from '@/lib/zoom'
 import { logApiError } from '@/lib/error-logger'
 
 type RouteContext = {
@@ -35,6 +36,7 @@ export async function POST(request: Request, { params }: RouteContext) {
       .from('bookings')
       .select(`
         id, management_token, google_event_id, provider_id, meeting_id, booking_link_id,
+        zoom_meeting_id, meeting_link, start_time, end_time,
         client_name, client_email, notes,
         providers:provider_id (id, name, business_name, email, timezone, google_calendar_token),
         meetings:meeting_id (name),
@@ -48,6 +50,10 @@ export async function POST(request: Request, { params }: RouteContext) {
         provider_id: string
         meeting_id: string
         booking_link_id: string | null
+        zoom_meeting_id: string | null
+        meeting_link: string | null
+        start_time: string
+        end_time: string
         client_name: string
         client_email: string
         notes: string | null
@@ -156,26 +162,28 @@ export async function POST(request: Request, { params }: RouteContext) {
         clientEmail: booking.client_email,
         startTime: new Date(start_time),
         endTime: new Date(end_time),
+        oldStartTime: new Date(booking.start_time),
+        oldEndTime: new Date(booking.end_time),
         timezone: primaryMember.timezone,
+        meetingLink: booking.meeting_link,
         notes: booking.notes,
       }
 
       try {
-        // Send rescheduled confirmation to client
-        await sendBookingConfirmationToClient({ ...baseEmailData, providerEmail: primaryMember.email })
+        // Send reschedule confirmation to client (showing old vs new time)
+        await sendClientRescheduleConfirmation({ ...baseEmailData, providerEmail: primaryMember.email })
 
         // Notify all team members about the reschedule
         await Promise.all(
           teamMembers.map(async (member) => {
-            await sendBookingNotificationToProvider({
+            await sendRescheduleNotificationToProvider({
               ...baseEmailData,
               providerEmail: member.email,
+              rescheduledBy: 'client',
             })
 
             // Update calendar event for each team member who has Google connected
-            // Note: We need to track google_event_id per member for this to work properly
-            // For now, update the primary member's calendar event
-            if (member.id === booking.provider_id && booking.google_event_id && member.google_calendar_token) {
+            if (booking.google_event_id && member.google_calendar_token) {
               await updateCalendarEvent(member.id, booking.google_event_id, {
                 start_time,
                 end_time,
@@ -183,6 +191,14 @@ export async function POST(request: Request, { params }: RouteContext) {
             }
           })
         )
+
+        // Update Zoom meeting if it exists
+        if (booking.zoom_meeting_id) {
+          await updateZoomMeeting(primaryMember.id, booking.zoom_meeting_id, {
+            start_time,
+            end_time,
+          }).catch(err => console.error('Zoom meeting update failed:', err))
+        }
       } catch (err) {
         console.error('Reschedule email/calendar error:', err)
         // Don't fail the reschedule if emails fail

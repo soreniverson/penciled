@@ -4,6 +4,7 @@ import { sendCancellationEmailToClient, sendCancellationEmailToProvider } from '
 import { parseBody, providerActionSchema, bookingIdSchema, validateParam } from '@/lib/validations'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { deleteCalendarEvent } from '@/lib/google-calendar'
+import { deleteZoomMeeting } from '@/lib/zoom'
 import { logApiError } from '@/lib/error-logger'
 import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
 
@@ -42,9 +43,10 @@ export async function POST(request: Request, { params }: RouteContext) {
       .from('bookings')
       .select(`
         id, management_token, google_event_id, provider_id, booking_link_id,
-        client_name, client_email, start_time, end_time,
-        providers:provider_id (name, business_name, email, timezone),
-        meetings:meeting_id (name)
+        zoom_meeting_id, client_name, client_email, start_time, end_time,
+        providers:provider_id (id, name, business_name, email, timezone, google_calendar_token),
+        meetings:meeting_id (name),
+        booking_links:booking_link_id (name)
       `)
       .eq('id', id)
       .single() as { data: {
@@ -53,12 +55,14 @@ export async function POST(request: Request, { params }: RouteContext) {
         google_event_id: string | null
         provider_id: string
         booking_link_id: string | null
+        zoom_meeting_id: string | null
         client_name: string
         client_email: string
         start_time: string
         end_time: string
-        providers: { name: string | null; business_name: string | null; email: string; timezone: string } | null
+        providers: { id: string; name: string | null; business_name: string | null; email: string; timezone: string; google_calendar_token: unknown } | null
         meetings: { name: string } | null
+        booking_links: { name: string } | null
       } | null }
 
     if (!booking) {
@@ -96,35 +100,90 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Failed to cancel' }, { status: 500 })
     }
 
-    // Send cancellation emails
-    const provider = booking.providers
+    // Get team members for team bookings
+    type TeamMember = {
+      id: string
+      name: string | null
+      business_name: string | null
+      email: string
+      timezone: string
+      google_calendar_token: unknown
+    }
+
+    let teamMembers: TeamMember[] = []
+    let displayName = booking.booking_links?.name || booking.providers?.business_name || booking.providers?.name || 'Your provider'
+
+    if (booking.booking_link_id) {
+      // Fetch all required team members
+      const { data: members } = await supabase
+        .from('booking_link_members')
+        .select(`
+          provider_id,
+          providers:provider_id (id, name, business_name, email, timezone, google_calendar_token)
+        `)
+        .eq('booking_link_id', booking.booking_link_id)
+        .eq('is_required', true) as { data: { providers: TeamMember | TeamMember[] | null }[] | null }
+
+      if (members) {
+        teamMembers = members
+          .map((m) => {
+            const p = m.providers
+            return Array.isArray(p) ? p[0] : p
+          })
+          .filter((p): p is TeamMember => p !== null)
+      }
+    } else if (booking.providers) {
+      teamMembers = [booking.providers]
+    }
+
     const meeting = booking.meetings
 
-    if (provider && meeting) {
-      const emailData = {
+    if (meeting && teamMembers.length > 0) {
+      const primaryMember = teamMembers[0]
+
+      // Send cancellation email to client
+      const baseEmailData = {
         bookingId: booking.id,
         managementToken: booking.management_token,
         meetingName: meeting.name,
-        providerName: provider.business_name || provider.name || 'Your provider',
-        providerEmail: provider.email,
+        providerName: displayName,
         clientName: booking.client_name,
         clientEmail: booking.client_email,
         startTime: new Date(booking.start_time),
         endTime: new Date(booking.end_time),
-        timezone: provider.timezone,
+        timezone: primaryMember.timezone,
         reason: reason ?? undefined,
       }
 
-      Promise.all([
-        sendCancellationEmailToClient(emailData),
-        sendCancellationEmailToProvider(emailData),
-      ]).catch(err => console.error('Cancellation email sending failed:', err))
-    }
+      sendCancellationEmailToClient({ ...baseEmailData, providerEmail: primaryMember.email })
+        .catch(err => console.error('Client cancellation email failed:', err))
 
-    // Delete Google Calendar event if it exists
-    if (booking.google_event_id) {
-      deleteCalendarEvent(booking.provider_id, booking.google_event_id)
-        .catch(err => console.error('Calendar event deletion failed:', err))
+      // Notify all team members
+      Promise.all(
+        teamMembers.map(member =>
+          sendCancellationEmailToProvider({
+            ...baseEmailData,
+            providerEmail: member.email,
+            providerName: displayName,
+          })
+        )
+      ).catch(err => console.error('Provider cancellation emails failed:', err))
+
+      // Delete calendar events for all team members with Google connected
+      if (booking.google_event_id) {
+        teamMembers
+          .filter(member => member.google_calendar_token)
+          .forEach(member => {
+            deleteCalendarEvent(member.id, booking.google_event_id!)
+              .catch(err => console.error(`Calendar deletion failed for ${member.email}:`, err))
+          })
+      }
+
+      // Delete Zoom meeting if it exists
+      if (booking.zoom_meeting_id) {
+        deleteZoomMeeting(primaryMember.id, booking.zoom_meeting_id)
+          .catch(err => console.error('Zoom meeting deletion failed:', err))
+      }
     }
 
     return NextResponse.json({ success: true })
