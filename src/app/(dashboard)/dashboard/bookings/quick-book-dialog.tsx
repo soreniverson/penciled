@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select'
 import { Loader2, Plus, AlertTriangle } from 'lucide-react'
 import type { Meeting, DelegatePermissions } from '@/types/database'
-import { format, addMinutes, setHours, setMinutes, startOfDay, addDays } from 'date-fns'
+import { format, addMinutes, setHours, setMinutes, addDays } from 'date-fns'
 
 type Props = {
   providerId: string
@@ -160,10 +160,10 @@ export function QuickBookDialog({ providerId, principalId, children }: Props) {
         return
       }
 
-      // Parse date and time
+      // Parse date and time - parse date components to avoid timezone issues
+      const [year, month, day] = selectedDate.split('-').map(Number)
       const [hours, minutes] = selectedTime.split(':').map(Number)
-      const dateObj = startOfDay(new Date(selectedDate))
-      const startTime = setMinutes(setHours(dateObj, hours), minutes)
+      const startTime = new Date(year, month - 1, day, hours, minutes, 0)
       const endTime = addMinutes(startTime, selectedMeeting.duration_minutes)
 
       const response = await fetch('/api/bookings', {
@@ -311,14 +311,17 @@ export function QuickBookDialog({ providerId, principalId, children }: Props) {
               </div>
             </div>
 
-            {selectedMeeting && selectedDate && selectedTime && (
-              <p className="text-sm text-muted-foreground">
-                {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')} at{' '}
-                {format(setMinutes(setHours(new Date(), parseInt(selectedTime.split(':')[0])), parseInt(selectedTime.split(':')[1])), 'h:mm a')}
-                {' - '}
-                {format(addMinutes(setMinutes(setHours(new Date(), parseInt(selectedTime.split(':')[0])), parseInt(selectedTime.split(':')[1])), selectedMeeting.duration_minutes), 'h:mm a')}
-              </p>
-            )}
+            {selectedMeeting && selectedDate && selectedTime && (() => {
+              const [year, month, day] = selectedDate.split('-').map(Number)
+              const [hours, mins] = selectedTime.split(':').map(Number)
+              const previewStart = new Date(year, month - 1, day, hours, mins)
+              const previewEnd = addMinutes(previewStart, selectedMeeting.duration_minutes)
+              return (
+                <p className="text-sm text-muted-foreground">
+                  {format(previewStart, 'EEEE, MMMM d, yyyy')} at {format(previewStart, 'h:mm a')} - {format(previewEnd, 'h:mm a')}
+                </p>
+              )
+            })()}
 
             {/* Notes */}
             <div className="space-y-2">
