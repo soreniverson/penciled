@@ -38,7 +38,7 @@ export default async function MeetingsPage() {
         <div className="space-y-3">
           {meetings.map((meeting) => (
             <Card key={meeting.id} className={!meeting.is_active ? 'opacity-60' : ''}>
-              <CardContent className="py-4 px-6">
+              <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">

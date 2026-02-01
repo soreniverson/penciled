@@ -90,7 +90,7 @@ export function BookingsPageClient({
               const startDate = new Date(booking.start_time)
               return (
                 <Card key={booking.id}>
-                  <CardContent className="py-4 px-4">
+                  <CardContent className="py-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="shrink-0 bg-muted rounded-lg px-3 py-2 text-center min-w-[90px]">
@@ -141,7 +141,7 @@ export function BookingsPageClient({
               const startDate = new Date(booking.start_time)
               return (
                 <Card key={booking.id} className="opacity-60">
-                  <CardContent className="py-4 px-4">
+                  <CardContent className="py-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="shrink-0 bg-muted rounded-lg px-3 py-2 text-center min-w-[90px]">

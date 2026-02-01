@@ -19,40 +19,6 @@ export type DelegatePermissions = {
 export type Database = {
   public: {
     Tables: {
-      allowed_emails: {
-        Row: {
-          id: string
-          email: string
-          added_at: string
-        }
-        Insert: {
-          id?: string
-          email: string
-          added_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          added_at?: string
-        }
-      }
-      waitlist_requests: {
-        Row: {
-          id: string
-          email: string
-          requested_at: string
-        }
-        Insert: {
-          id?: string
-          email: string
-          requested_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          requested_at?: string
-        }
-      }
       delegates: {
         Row: {
           id: string

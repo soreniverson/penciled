@@ -37,11 +37,6 @@ export async function POST(request: Request) {
     user = newUser.user
   }
 
-  // Add to allowed_emails if not already there
-  await (adminClient
-    .from('allowed_emails') as any)
-    .upsert({ email: email.toLowerCase() }, { onConflict: 'email' })
-
   // Create provider record if needed
   const { data: existingProvider } = await adminClient
     .from('providers')
