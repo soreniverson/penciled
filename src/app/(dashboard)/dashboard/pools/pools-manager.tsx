@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PageHeader } from '@/components/page-header'
 import {
   Select,
   SelectContent,
@@ -187,21 +186,19 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Pools">
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/settings">
-            <Button variant="ghost" size="sm">
-              <ChevronLeft className="size-4 mr-1" />
-              Settings
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/dashboard/settings">
+          <Button variant="ghost" size="icon" className="size-8">
+            <ChevronLeft className="size-4" />
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight flex-1">Pools</h1>
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Plus className="size-4" />
             </Button>
-          </Link>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="size-4 mr-1" />
-                New Pool
-              </Button>
-            </DialogTrigger>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Resource Pool</DialogTitle>
@@ -259,8 +256,7 @@ export function PoolsManager({ ownedPools: initialOwned, memberPools: initialMem
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        </div>
-      </PageHeader>
+      </div>
 
       {/* Owned Pools */}
       {ownedPools.length > 0 && (

@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
-import { PageHeader } from '@/components/page-header'
 import {
   Select,
   SelectContent,
@@ -311,24 +310,22 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Follow-Ups">
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/settings">
-            <Button variant="ghost" size="sm">
-              <ChevronLeft className="size-4 mr-1" />
-              Settings
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/dashboard/settings">
+          <Button variant="ghost" size="icon" className="size-8">
+            <ChevronLeft className="size-4" />
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight flex-1">Follow-Ups</h1>
+        <Dialog open={showCreateDialog} onOpenChange={(open) => {
+          setShowCreateDialog(open)
+          if (!open) resetForm()
+        }}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Plus className="size-4" />
             </Button>
-          </Link>
-          <Dialog open={showCreateDialog} onOpenChange={(open) => {
-            setShowCreateDialog(open)
-            if (!open) resetForm()
-          }}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="size-4 mr-1" />
-                New Template
-              </Button>
-            </DialogTrigger>
+          </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Follow-up Template</DialogTitle>
@@ -345,8 +342,7 @@ export function FollowUpTemplatesManager({ initialTemplates, meetings }: Props) 
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        </div>
-      </PageHeader>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingTemplate} onOpenChange={(open) => {

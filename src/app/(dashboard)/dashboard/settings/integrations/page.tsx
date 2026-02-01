@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Check, X, Calendar, Video, ChevronLeft } from 'lucide-react'
 import { DisconnectGoogleCalendarButton } from './disconnect-button'
 import { DisconnectZoomButton } from './disconnect-zoom-button'
-import { PageHeader } from '@/components/page-header'
 import type { Provider } from '@/types/database'
 
 type SearchParams = Promise<{ success?: string; error?: string }>
@@ -36,14 +35,14 @@ export default async function IntegrationsPage({
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Integrations">
+      <div className="flex items-center gap-3 mb-6">
         <Link href="/dashboard/settings">
-          <Button variant="ghost" size="sm">
-            <ChevronLeft className="size-4 mr-1" />
-            Settings
+          <Button variant="ghost" size="icon" className="size-8">
+            <ChevronLeft className="size-4" />
           </Button>
         </Link>
-      </PageHeader>
+        <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
+      </div>
 
       {/* Success/Error Messages */}
       {params.success === 'google_connected' && (

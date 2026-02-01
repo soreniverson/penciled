@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/page-header'
 import { Plus, Copy, Check, ExternalLink, Users, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { BookingLink } from '@/types/database'
@@ -45,22 +44,19 @@ export function LinksList({ links }: Props) {
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Team">
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/settings">
-            <Button variant="ghost" size="sm">
-              <ChevronLeft className="size-4 mr-1" />
-              Settings
-            </Button>
-          </Link>
-          <Link href="/dashboard/links/new">
-            <Button size="sm">
-              <Plus className="size-4 mr-1" />
-              New Link
-            </Button>
-          </Link>
-        </div>
-      </PageHeader>
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/dashboard/settings">
+          <Button variant="ghost" size="icon" className="size-8">
+            <ChevronLeft className="size-4" />
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight flex-1">Team</h1>
+        <Link href="/dashboard/links/new">
+          <Button variant="outline" size="icon">
+            <Plus className="size-4" />
+          </Button>
+        </Link>
+      </div>
 
       {links.length === 0 ? (
         <Card>

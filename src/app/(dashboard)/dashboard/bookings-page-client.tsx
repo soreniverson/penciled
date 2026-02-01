@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/page-header'
-import { Calendar, ExternalLink, Zap, AlertCircle } from 'lucide-react'
+import { Calendar, Zap, AlertCircle } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
 import type { Booking, Meeting } from '@/types/database'
 import { CopyButton } from '@/components/copy-button'
@@ -62,20 +62,12 @@ export function BookingsPageClient({
       <PageHeader title="Bookings">
         <div className="flex gap-2">
           <QuickBookDialog providerId={userId} principalId={isViewingPrincipal ? principalId : null}>
-            <Button variant="outline" size="sm">
-              <Zap className="size-4 mr-1" />
-              Quick Book
+            <Button variant="outline" size="icon">
+              <Zap className="size-4" />
             </Button>
           </QuickBookDialog>
           {bookingPageUrl && (
-            <>
-              <CopyButton text={bookingPageUrl} />
-              <Link href={`/${userSlug}`} target="_blank">
-                <Button variant="outline" size="icon">
-                  <ExternalLink className="size-4" />
-                </Button>
-              </Link>
-            </>
+            <CopyButton text={bookingPageUrl} />
           )}
         </div>
       </PageHeader>
@@ -98,15 +90,16 @@ export function BookingsPageClient({
               const startDate = new Date(booking.start_time)
               return (
                 <Card key={booking.id}>
-                  <CardContent className="py-3 px-4">
+                  <CardContent className="py-4 px-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="text-center shrink-0 w-16">
+                        <div className="shrink-0 bg-muted rounded-lg px-3 py-2 text-center min-w-[90px]">
                           <p className="text-xs text-muted-foreground leading-tight">{formatBookingDate(startDate)}</p>
-                          <p className="text-lg font-semibold leading-tight">{format(startDate, 'h:mm a')}</p>
+                          <p className="text-xl font-semibold leading-tight">{format(startDate, 'h:mm')}</p>
+                          <p className="text-xs text-muted-foreground leading-tight">{format(startDate, 'a')}</p>
                         </div>
                         <div className="min-w-0 flex flex-col justify-center">
-                          <p className="font-medium truncate leading-tight">{booking.client_name}</p>
+                          <p className="font-medium text-lg truncate leading-tight">{booking.client_name}</p>
                           <p className="text-sm text-muted-foreground truncate leading-tight">
                             {booking.meetings?.name}
                             {booking.status === 'pending' && <span className="text-yellow-500 ml-2">(pending)</span>}
@@ -148,15 +141,16 @@ export function BookingsPageClient({
               const startDate = new Date(booking.start_time)
               return (
                 <Card key={booking.id} className="opacity-60">
-                  <CardContent className="py-3 px-4">
+                  <CardContent className="py-4 px-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="text-center shrink-0 w-16">
-                          <p className="text-xs text-muted-foreground leading-tight">{format(startDate, 'MMM d')}</p>
-                          <p className="text-lg font-semibold leading-tight">{format(startDate, 'h:mm a')}</p>
+                        <div className="shrink-0 bg-muted rounded-lg px-3 py-2 text-center min-w-[90px]">
+                          <p className="text-xs text-muted-foreground leading-tight">{format(startDate, 'EEE, MMM d')}</p>
+                          <p className="text-xl font-semibold leading-tight">{format(startDate, 'h:mm')}</p>
+                          <p className="text-xs text-muted-foreground leading-tight">{format(startDate, 'a')}</p>
                         </div>
                         <div className="min-w-0 flex flex-col justify-center">
-                          <p className="font-medium truncate leading-tight">{booking.client_name}</p>
+                          <p className="font-medium text-lg truncate leading-tight">{booking.client_name}</p>
                           <p className="text-sm text-muted-foreground truncate leading-tight">
                             {booking.meetings?.name}
                             {booking.status !== 'confirmed' && (

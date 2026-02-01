@@ -252,42 +252,42 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
       </PageHeader>
 
       <Card>
-        <CardContent className="py-2 divide-y divide-border">
+        <CardContent className="py-4 space-y-1">
           {DAYS.map((day) => (
-            <div key={day.value} className="py-3 first:pt-0 last:pb-0">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-h-10">
-                <div className="flex items-center gap-3 w-28 shrink-0">
-                  <Switch
-                    checked={availability[day.value].enabled}
-                    onCheckedChange={(checked) => toggleDay(day.value, checked)}
-                  />
-                  <span className={`text-sm font-medium ${!availability[day.value].enabled ? 'text-muted-foreground' : ''}`}>
-                    {day.fullLabel}
-                  </span>
-                </div>
+            <div key={day.value} className="flex items-start gap-4 py-3">
+              <div className="flex items-center gap-3 w-32 shrink-0 pt-1">
+                <Switch
+                  checked={availability[day.value].enabled}
+                  onCheckedChange={(checked) => toggleDay(day.value, checked)}
+                />
+                <span className={`text-sm font-medium ${!availability[day.value].enabled ? 'text-muted-foreground' : ''}`}>
+                  {day.fullLabel}
+                </span>
+              </div>
 
-                <div className="flex-1 flex items-center">
-                  {availability[day.value].enabled ? (
-                    <div className="space-y-2 w-full">
-                      {availability[day.value].windows.map((window, windowIndex) => (
-                        <div key={windowIndex} className="flex items-center gap-2">
-                          <Input
-                            type="time"
-                            className="w-[100px] sm:w-[120px]"
-                            value={window.startTime}
-                            onChange={(e) =>
-                              updateWindow(day.value, windowIndex, { startTime: e.target.value })
-                            }
-                          />
-                          <span className="text-muted-foreground">–</span>
-                          <Input
-                            type="time"
-                            className="w-[100px] sm:w-[120px]"
-                            value={window.endTime}
-                            onChange={(e) =>
-                              updateWindow(day.value, windowIndex, { endTime: e.target.value })
-                            }
-                          />
+              <div className="flex-1">
+                {availability[day.value].enabled ? (
+                  <div className="space-y-3">
+                    {availability[day.value].windows.map((window, windowIndex) => (
+                      <div key={windowIndex} className="flex items-center gap-3">
+                        <Input
+                          type="time"
+                          className="w-[130px]"
+                          value={window.startTime}
+                          onChange={(e) =>
+                            updateWindow(day.value, windowIndex, { startTime: e.target.value })
+                          }
+                        />
+                        <span className="text-muted-foreground text-sm">to</span>
+                        <Input
+                          type="time"
+                          className="w-[130px]"
+                          value={window.endTime}
+                          onChange={(e) =>
+                            updateWindow(day.value, windowIndex, { endTime: e.target.value })
+                          }
+                        />
+                        <div className="flex items-center gap-1">
                           {availability[day.value].windows.length > 1 && (
                             <Button
                               variant="ghost"
@@ -309,12 +309,12 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
                             </Button>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">Unavailable</span>
-                  )}
-                </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground pt-1 block">Unavailable</span>
+                )}
               </div>
             </div>
           ))}

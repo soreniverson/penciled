@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { PageHeader } from '@/components/page-header'
 import {
   Dialog,
   DialogContent,
@@ -153,14 +152,14 @@ export function DelegatesManager({ initialDelegates, initialPrincipals }: Props)
 
   return (
     <div className="space-y-6 max-w-[780px] mx-auto">
-      <PageHeader title="Delegates">
+      <div className="flex items-center gap-3 mb-6">
         <Link href="/dashboard/settings">
-          <Button variant="ghost" size="sm">
-            <ChevronLeft className="size-4 mr-1" />
-            Settings
+          <Button variant="ghost" size="icon" className="size-8">
+            <ChevronLeft className="size-4" />
           </Button>
         </Link>
-      </PageHeader>
+        <h1 className="text-2xl font-semibold tracking-tight">Delegates</h1>
+      </div>
 
       {/* My Delegates */}
       <Card>
