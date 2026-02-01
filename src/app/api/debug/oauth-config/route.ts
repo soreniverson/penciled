@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  // Only allow in development or with secret
-  const isDev = process.env.NODE_ENV === 'development'
+  // Only allow in development
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 })
+  }
 
   return NextResponse.json({
     // Show partial values for security

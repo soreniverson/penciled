@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient, createUntypedClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -45,6 +45,16 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
   const [memberError, setMemberError] = useState<string | null>(null)
   const [minRequiredMembers, setMinRequiredMembers] = useState<string>('')
   const [resourcePoolId, setResourcePoolId] = useState<string | null>(null)
+  const copiedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const loadData = async () => {
@@ -157,7 +167,10 @@ export default function EditLinkPage({ params }: { params: Promise<{ id: string 
     const url = `${window.location.origin}/book/link/${slug}`
     await navigator.clipboard.writeText(url)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (copiedTimeoutRef.current) {
+      clearTimeout(copiedTimeoutRef.current)
+    }
+    copiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000)
   }
 
   const addMember = async () => {

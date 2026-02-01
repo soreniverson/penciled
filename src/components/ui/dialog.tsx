@@ -63,7 +63,7 @@ function DialogContent({
         className={cn(
           "fixed top-12 left-[50%] z-50 w-[calc(100%-32px)] max-w-[420px] translate-x-[-50%] rounded-xl border border-[#262626] bg-[#141414] outline-none p-5",
           "sm:top-[50%] sm:translate-y-[-50%]",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-150",
           className
         )}
         {...props}
@@ -72,7 +72,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-md p-1 text-[#525252] transition-colors hover:text-[#a3a3a3] hover:bg-[#1f1f1f] outline-none disabled:pointer-events-none"
+            className="absolute top-4 right-4 rounded-md p-1 text-[#525252] transition-colors duration-150 hover:text-[#a3a3a3] hover:bg-[#1f1f1f] outline-none focus-visible:ring-2 focus-visible:ring-[#525252] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] disabled:pointer-events-none"
           >
             <XIcon className="size-4" />
             <span className="sr-only">Close</span>

@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
 export async function GET(request: Request) {
+  // Only allow in development
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 })
+  }
+
   const { searchParams } = new URL(request.url)
   const to = searchParams.get('to')
 

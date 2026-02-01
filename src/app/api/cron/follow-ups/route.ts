@@ -31,11 +31,11 @@ type FollowUpWithDetails = {
 }
 
 export async function GET(request: Request) {
-  // Verify cron secret
+  // Verify cron secret - fail-secure if not configured
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -203,13 +203,15 @@ export async function GET(request: Request) {
         .in('id', successfulIds)
     }
 
-    // Batch update failed follow-ups
-    for (const failed of failedUpdates) {
+    // Batch update failed follow-ups - update all at once with same status
+    if (failedUpdates.length > 0) {
+      const failedIds = failedUpdates.map(f => f.id)
+      // Note: error_message will be the last one, but status update is what matters
       await supabase
         .from('follow_ups')
         // @ts-ignore
-        .update({ status: 'failed', error_message: failed.error_message })
-        .eq('id', failed.id)
+        .update({ status: 'failed', error_message: 'Processing failed - check logs' })
+        .in('id', failedIds)
     }
 
     return NextResponse.json({
