@@ -12,6 +12,7 @@ import { format } from 'date-fns'
 import { Clock, ArrowLeft, Check, Loader2, CalendarDays } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import Link from 'next/link'
+import Image from 'next/image'
 
 type BlackoutDateRange = {
   start_date: string
@@ -153,10 +154,13 @@ export function RescheduleFlow({ booking, provider, meeting, availability, token
         <div className="max-w-xl mx-auto px-4 py-4">
           <div className={`flex items-center ${provider.logo_url ? 'justify-center' : ''}`}>
             {provider.logo_url ? (
-              <img
+              <Image
                 src={provider.logo_url}
                 alt={provider.business_name || 'Logo'}
+                width={120}
+                height={24}
                 className="h-6 w-auto object-contain"
+                unoptimized={provider.logo_url.startsWith('data:')}
               />
             ) : (
               <h1 className="text-lg font-semibold">{provider.business_name}</h1>

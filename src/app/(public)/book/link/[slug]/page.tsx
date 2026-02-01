@@ -1,7 +1,19 @@
 import { createUntypedClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { LinkBookingFlow } from './link-booking-flow'
+import dynamic from 'next/dynamic'
+import { Loader2 } from 'lucide-react'
 import type { BookingLink, Provider, Meeting } from '@/types/database'
+
+const LinkBookingFlow = dynamic(
+  () => import('./link-booking-flow').then(mod => ({ default: mod.LinkBookingFlow })),
+  {
+    loading: () => (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  }
+)
 
 type Props = {
   params: Promise<{ slug: string }>

@@ -24,6 +24,7 @@ export async function GET() {
       `)
       .eq('principal_id', user.id)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) {
       console.error('Get delegates error:', error)
@@ -40,6 +41,7 @@ export async function GET() {
       `)
       .eq('delegate_id', user.id)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     return NextResponse.json({
       delegates: delegates || [],

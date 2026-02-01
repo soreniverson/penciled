@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -204,13 +204,16 @@ export function QuickBookDialog({ providerId, principalId, children }: Props) {
 
   const selectedMeeting = meetings.find(m => m.id === meetingId)
 
-  // Generate time slots (every 15 minutes)
-  const timeSlots: string[] = []
-  for (let h = 6; h < 22; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      timeSlots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`)
+  // Generate time slots (every 15 minutes) - memoized to prevent recreation on every render
+  const timeSlots = useMemo(() => {
+    const slots: string[] = []
+    for (let h = 6; h < 22; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`)
+      }
     }
-  }
+    return slots
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {

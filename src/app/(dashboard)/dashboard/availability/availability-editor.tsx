@@ -55,6 +55,7 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const isInitialLoad = useRef(true)
+  const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Blackout dates state
   const [blackoutDates, setBlackoutDates] = useState<BlackoutDate[]>(initialBlackoutDates)
@@ -69,10 +70,15 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
     Object.keys(initialAvailability).length > 0 ? initialAvailability : DEFAULT_AVAILABILITY
   )
 
-  // Mark initial load complete after first render
+  // Mark initial load complete after first render and cleanup timeouts
   useEffect(() => {
     const timer = setTimeout(() => { isInitialLoad.current = false }, 100)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      if (savedTimeoutRef.current) {
+        clearTimeout(savedTimeoutRef.current)
+      }
+    }
   }, [])
 
   const saveAvailability = useCallback(async (data: Record<number, AvailabilityDay>) => {
@@ -107,7 +113,10 @@ export function AvailabilityEditor({ providerId, initialAvailability, initialBla
       }
 
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (savedTimeoutRef.current) {
+        clearTimeout(savedTimeoutRef.current)
+      }
+      savedTimeoutRef.current = setTimeout(() => setSaved(false), 2000)
     } catch (error) {
       console.error('Save error:', error)
     } finally {

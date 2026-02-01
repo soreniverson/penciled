@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache'
+import { revalidateTag as nextRevalidateTag } from 'next/cache'
 import { cache } from 'react'
 
 /**
@@ -46,4 +47,27 @@ export function createCachedFn<T extends (...args: any[]) => Promise<any>>(
  */
 export function createDeduplicatedFn<T extends (...args: any[]) => Promise<any>>(fn: T): T {
   return cache(fn) as T
+}
+
+/**
+ * Invalidate cache for a specific provider's data
+ * Call this after mutations to ensure fresh data
+ * Note: Must be called from a Server Action or Route Handler
+ */
+export async function invalidateProviderCache(providerId: string) {
+  'use server'
+  // Next.js 16 requires a profile parameter - using immediate expiration
+  nextRevalidateTag(CACHE_TAGS.provider(providerId), { expire: 0 })
+  nextRevalidateTag(CACHE_TAGS.meetings(providerId), { expire: 0 })
+  nextRevalidateTag(CACHE_TAGS.availability(providerId), { expire: 0 })
+  nextRevalidateTag(CACHE_TAGS.bookings(providerId), { expire: 0 })
+}
+
+/**
+ * Invalidate specific cache tags
+ * Note: Must be called from a Server Action or Route Handler
+ */
+export async function invalidateCache(tag: string) {
+  'use server'
+  nextRevalidateTag(tag, { expire: 0 })
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/page-header'
@@ -19,12 +19,28 @@ type Props = {
 
 export function LinksList({ links }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   const copyLink = async (link: BookingLinkWithCounts) => {
     const url = `${window.location.origin}/book/link/${link.slug}`
     await navigator.clipboard.writeText(url)
     setCopiedId(link.id)
-    setTimeout(() => setCopiedId(null), 2000)
+
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
+    timeoutRef.current = setTimeout(() => setCopiedId(null), 2000)
   }
 
   return (

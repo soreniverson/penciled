@@ -31,7 +31,7 @@ export default async function BookingsPage() {
 
   const teamLinkIds = memberLinks?.map(m => m.booking_link_id) || []
 
-  // Get all upcoming bookings (own + team)
+  // Get all upcoming bookings (own + team) - limited to prevent unbounded queries
   const { data: ownBookings } = await supabase
     .from('bookings')
     .select(`
@@ -43,6 +43,7 @@ export default async function BookingsPage() {
     .in('status', ['confirmed', 'pending'])
     .gte('start_time', new Date().toISOString())
     .order('start_time', { ascending: true })
+    .limit(100)
     .returns<BookingWithMeeting[]>()
 
   // Get team bookings (where user is a team member but not the provider)
@@ -60,6 +61,7 @@ export default async function BookingsPage() {
       .in('status', ['confirmed', 'pending'])
       .gte('start_time', new Date().toISOString())
       .order('start_time', { ascending: true })
+      .limit(100)
       .returns<BookingWithMeeting[]>()
 
     teamBookings = (teamData || []).map(b => ({ ...b, isTeamBooking: true }))

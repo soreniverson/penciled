@@ -72,6 +72,8 @@ export async function GET(request: Request) {
       .lte('start_time', reminder24hEnd.toISOString())
 
     if (bookings24h) {
+      const successfulIds: string[] = []
+
       for (const booking of bookings24h as unknown as BookingWithReminder[]) {
         const provider = booking.providers
         const meeting = booking.meetings
@@ -98,16 +100,19 @@ export async function GET(request: Request) {
             sendReminderEmailToProvider(emailData),
           ])
 
-          // Mark reminder as sent
-          await supabase
-            .from('bookings')
-            .update({ reminder_24h_sent: true })
-            .eq('id', booking.id)
-
+          successfulIds.push(booking.id)
           results.reminders24h++
         } catch (error) {
           results.errors.push(`24h reminder for ${booking.id}: ${error}`)
         }
+      }
+
+      // Batch update all successful reminders
+      if (successfulIds.length > 0) {
+        await supabase
+          .from('bookings')
+          .update({ reminder_24h_sent: true })
+          .in('id', successfulIds)
       }
     }
 
@@ -126,6 +131,8 @@ export async function GET(request: Request) {
       .lte('start_time', reminder1hEnd.toISOString())
 
     if (bookings1h) {
+      const successfulIds: string[] = []
+
       for (const booking of bookings1h as unknown as BookingWithReminder[]) {
         const provider = booking.providers
         const meeting = booking.meetings
@@ -152,16 +159,19 @@ export async function GET(request: Request) {
             sendReminderEmailToProvider(emailData),
           ])
 
-          // Mark reminder as sent
-          await supabase
-            .from('bookings')
-            .update({ reminder_1h_sent: true })
-            .eq('id', booking.id)
-
+          successfulIds.push(booking.id)
           results.reminders1h++
         } catch (error) {
           results.errors.push(`1h reminder for ${booking.id}: ${error}`)
         }
+      }
+
+      // Batch update all successful reminders
+      if (successfulIds.length > 0) {
+        await supabase
+          .from('bookings')
+          .update({ reminder_1h_sent: true })
+          .in('id', successfulIds)
       }
     }
 

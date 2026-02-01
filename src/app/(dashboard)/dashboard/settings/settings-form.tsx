@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,7 @@ import { generateSlug } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
 import { Loader2, Check, ExternalLink, LogOut, X, ImageIcon, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Provider } from '@/types/database'
 
 const COMMON_TIMEZONES = [
@@ -43,6 +44,7 @@ export function SettingsForm({ provider: initialProvider }: Props) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const isInitialLoad = useRef(true)
+  const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const [name, setName] = useState(initialProvider.name || '')
   const [businessName, setBusinessName] = useState(initialProvider.business_name || '')
@@ -53,10 +55,15 @@ export function SettingsForm({ provider: initialProvider }: Props) {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(true)
   const [checkingSlug, setCheckingSlug] = useState(false)
 
-  // Mark initial load complete after first render
+  // Mark initial load complete after first render and cleanup timeouts
   useEffect(() => {
     const timer = setTimeout(() => { isInitialLoad.current = false }, 100)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      if (savedTimeoutRef.current) {
+        clearTimeout(savedTimeoutRef.current)
+      }
+    }
   }, [])
 
   // Check slug availability
@@ -104,7 +111,10 @@ export function SettingsForm({ provider: initialProvider }: Props) {
 
       if (!error) {
         setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
+        if (savedTimeoutRef.current) {
+          clearTimeout(savedTimeoutRef.current)
+        }
+        savedTimeoutRef.current = setTimeout(() => setSaved(false), 2000)
       }
     } catch (error) {
       console.error('Save error:', error)
@@ -273,10 +283,13 @@ export function SettingsForm({ provider: initialProvider }: Props) {
                 />
                 {logoUrl ? (
                   <div className="relative group size-10 cursor-default">
-                    <img
+                    <Image
                       src={logoUrl}
                       alt="Logo"
+                      width={40}
+                      height={40}
                       className="size-10 rounded-lg object-contain bg-muted"
+                      unoptimized={logoUrl.startsWith('data:')}
                     />
                     <button
                       type="button"

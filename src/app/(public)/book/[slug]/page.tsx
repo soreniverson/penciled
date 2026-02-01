@@ -1,7 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { BookingFlow } from './booking-flow'
+import dynamic from 'next/dynamic'
 import { ThemeWrapper } from '@/components/theme-wrapper'
+import { Loader2 } from 'lucide-react'
+
+const BookingFlow = dynamic(() => import('./booking-flow').then(mod => ({ default: mod.BookingFlow })), {
+  loading: () => (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="size-6 animate-spin text-muted-foreground" />
+    </div>
+  ),
+})
 import { getProviderBySlug } from '@/lib/data/providers'
 import { getProviderBlackoutDates } from '@/lib/data/availability'
 import type { Provider, Meeting, Availability } from '@/types/database'

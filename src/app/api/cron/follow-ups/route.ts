@@ -69,17 +69,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, message: 'No pending follow-ups' })
     }
 
+    const successfulIds: string[] = []
+    const failedUpdates: { id: string; error_message: string }[] = []
+
     for (const followUp of followUps as unknown as FollowUpWithDetails[]) {
       results.processed++
 
       const booking = followUp.bookings
       if (!booking || !booking.providers || !booking.meetings) {
-        // Mark as failed if missing data
-        await supabase
-          .from('follow_ups')
-          // @ts-ignore
-          .update({ status: 'failed', error_message: 'Missing booking data' })
-          .eq('id', followUp.id)
+        failedUpdates.push({ id: followUp.id, error_message: 'Missing booking data' })
         results.failed++
         continue
       }
@@ -137,6 +135,7 @@ export async function GET(request: Request) {
             `,
           })
 
+          successfulIds.push(followUp.id)
           results.sent++
         } else if (followUp.type === 'feedback_request') {
           // Send feedback request email
@@ -181,30 +180,36 @@ export async function GET(request: Request) {
             `,
           })
 
+          successfulIds.push(followUp.id)
           results.sent++
         }
-
-        // Mark as sent
-        await supabase
-          .from('follow_ups')
-          // @ts-ignore
-          .update({ status: 'sent', sent_at: new Date().toISOString() })
-          .eq('id', followUp.id)
       } catch (err) {
         console.error(`Follow-up ${followUp.id} failed:`, err)
         results.errors.push(`${followUp.id}: ${err}`)
         results.failed++
-
-        // Mark as failed
-        await supabase
-          .from('follow_ups')
-          // @ts-ignore
-          .update({
-            status: 'failed',
-            error_message: err instanceof Error ? err.message : String(err),
-          })
-          .eq('id', followUp.id)
+        failedUpdates.push({
+          id: followUp.id,
+          error_message: err instanceof Error ? err.message : String(err),
+        })
       }
+    }
+
+    // Batch update successful follow-ups
+    if (successfulIds.length > 0) {
+      await supabase
+        .from('follow_ups')
+        // @ts-ignore
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .in('id', successfulIds)
+    }
+
+    // Batch update failed follow-ups
+    for (const failed of failedUpdates) {
+      await supabase
+        .from('follow_ups')
+        // @ts-ignore
+        .update({ status: 'failed', error_message: failed.error_message })
+        .eq('id', failed.id)
     }
 
     return NextResponse.json({

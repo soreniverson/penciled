@@ -18,6 +18,7 @@ export async function GET() {
       .select('*')
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) {
       console.error('Get templates error:', error)
