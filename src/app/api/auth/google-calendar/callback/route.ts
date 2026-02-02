@@ -10,21 +10,29 @@ export async function GET(request: Request) {
   const error = searchParams.get('error')
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const cookieStore = await cookies()
+
+  // Check for custom redirect (e.g., from onboarding)
+  const customRedirect = cookieStore.get('google_oauth_redirect')?.value
+  const defaultRedirect = '/dashboard/settings/integrations'
+  const redirectPath = customRedirect || defaultRedirect
+
+  // Clear the redirect cookie
+  cookieStore.delete('google_oauth_redirect')
 
   if (error) {
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/settings/integrations?error=google_denied`
+      `${baseUrl}${redirectPath}?error=google_denied`
     )
   }
 
   if (!code || !state) {
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/settings/integrations?error=invalid_request`
+      `${baseUrl}${redirectPath}?error=invalid_request`
     )
   }
 
   // Verify state matches the cookie we set (CSRF protection)
-  const cookieStore = await cookies()
   const storedState = cookieStore.get('google_oauth_state')?.value
 
   // Clear the state cookie
@@ -32,7 +40,7 @@ export async function GET(request: Request) {
 
   if (!storedState || storedState !== state) {
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/settings/integrations?error=invalid_state`
+      `${baseUrl}${redirectPath}?error=invalid_state`
     )
   }
 
@@ -41,7 +49,7 @@ export async function GET(request: Request) {
 
   if (!user) {
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/settings/integrations?error=not_authenticated`
+      `${baseUrl}${redirectPath}?error=not_authenticated`
     )
   }
 
@@ -61,7 +69,7 @@ export async function GET(request: Request) {
     if (updateError) {
       console.error('Failed to save tokens:', updateError)
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/settings/integrations?error=save_failed`
+        `${baseUrl}${redirectPath}?error=save_failed`
       )
     }
 
@@ -71,12 +79,12 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/settings/integrations?success=google_connected`
+      `${baseUrl}${redirectPath}?success=google_connected`
     )
   } catch (err) {
     console.error('Google Calendar OAuth error:', err)
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/settings/integrations?error=token_exchange_failed`
+      `${baseUrl}${redirectPath}?error=token_exchange_failed`
     )
   }
 }

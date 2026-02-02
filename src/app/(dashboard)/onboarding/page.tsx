@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { generateSlug, getTimezoneOffset } from '@/lib/utils'
-import { Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
+import { Check, ArrowRight, ArrowLeft, Loader2, Calendar } from 'lucide-react'
 
 const DURATION_OPTIONS = [
   { value: '15', label: '15 minutes' },
@@ -59,21 +59,27 @@ type AvailabilityDay = {
   endTime: string
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Step 1: Name and timezone
   const [name, setName] = useState('')
   const [timezone, setTimezone] = useState(getTimezoneOffset())
 
-  // Step 2: Meeting
+  // Step 2: Google Calendar
+  const [calendarConnected, setCalendarConnected] = useState(false)
+  const [connectingCalendar, setConnectingCalendar] = useState(false)
+
+  // Step 3: Meeting
   const [meetingName, setMeetingName] = useState('')
   const [meetingDuration, setMeetingDuration] = useState('60')
 
-  // Step 3: Availability
+  // Step 4: Availability
   const [availability, setAvailability] = useState<Record<number, AvailabilityDay>>({
     0: { enabled: false, startTime: '09:00', endTime: '17:00' },
     1: { enabled: true, startTime: '09:00', endTime: '17:00' },
@@ -84,10 +90,51 @@ export default function OnboardingPage() {
     6: { enabled: false, startTime: '09:00', endTime: '17:00' },
   })
 
-  // Step 4: Slug
+  // Step 5: Slug
   const [slug, setSlug] = useState('')
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
+
+  // Check initial state: calendar connection and URL params from OAuth callback
+  useEffect(() => {
+    const checkInitialState = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        // Check if calendar is already connected
+        const { data: provider } = await supabase
+          .from('providers')
+          .select('google_calendar_token')
+          .eq('id', user.id)
+          .single() as { data: { google_calendar_token: unknown } | null }
+
+        if (provider?.google_calendar_token) {
+          setCalendarConnected(true)
+        }
+      }
+
+      // Handle OAuth callback params
+      const success = searchParams.get('success')
+      const oauthError = searchParams.get('error')
+
+      if (success === 'google_connected') {
+        setCalendarConnected(true)
+        setStep(2) // Stay on step 2 to show connected state
+      } else if (oauthError) {
+        setStep(2) // Go to step 2 to show error
+        if (oauthError === 'google_denied') {
+          setError('Google Calendar access was denied. Please try again.')
+        } else {
+          setError('Failed to connect Google Calendar. Please try again.')
+        }
+      }
+
+      setInitialLoading(false)
+    }
+
+    checkInitialState()
+  }, [searchParams])
 
   // Generate slug when name changes
   useEffect(() => {
@@ -120,6 +167,12 @@ export default function OnboardingPage() {
     return () => clearTimeout(debounce)
   }, [slug])
 
+  const handleConnectCalendar = () => {
+    setConnectingCalendar(true)
+    // Redirect to Google OAuth with onboarding redirect
+    window.location.href = '/api/auth/google-calendar?redirect=/onboarding'
+  }
+
   const handleNext = () => {
     setError(null)
 
@@ -131,13 +184,20 @@ export default function OnboardingPage() {
     }
 
     if (step === 2) {
+      if (!calendarConnected) {
+        setError('Please connect your Google Calendar to continue')
+        return
+      }
+    }
+
+    if (step === 3) {
       if (!meetingName.trim()) {
         setError('Please enter a meeting name')
         return
       }
     }
 
-    if (step === 3) {
+    if (step === 4) {
       const hasAvailability = Object.values(availability).some(day => day.enabled)
       if (!hasAvailability) {
         setError('Please set at least one day of availability')
@@ -230,13 +290,21 @@ export default function OnboardingPage() {
     }))
   }
 
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
         {/* Progress */}
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <div
                 key={s}
                 className={`flex items-center justify-center size-8 rounded-full text-sm font-medium transition-colors ${
@@ -252,7 +320,7 @@ export default function OnboardingPage() {
             ))}
           </div>
           <p className="text-center text-sm text-muted-foreground">
-            Step {step} of 4
+            Step {step} of 5
           </p>
         </div>
 
@@ -291,8 +359,63 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 2: Meeting */}
+        {/* Step 2: Google Calendar */}
         {step === 2 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Connect your calendar</CardTitle>
+              <CardDescription>
+                Sync your bookings and prevent double-booking
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {calendarConnected ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
+                  <div className="flex items-center justify-center size-10 rounded-full bg-green-100">
+                    <Check className="size-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-900">Google Calendar connected</p>
+                    <p className="text-sm text-green-700">Your bookings will sync automatically</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="p-4 rounded-lg border bg-muted/50">
+                    <div className="flex items-start gap-3">
+                      <Calendar className="size-5 text-muted-foreground mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Why connect Google Calendar?</p>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Automatically add bookings to your calendar</li>
+                          <li>• Block times when you&apos;re already busy</li>
+                          <li>• Send calendar invites to clients</li>
+                          <li>• Create Google Meet links for video calls</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleConnectCalendar}
+                    disabled={connectingCalendar}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {connectingCalendar ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <Calendar className="size-4 mr-2" />
+                    )}
+                    Connect Google Calendar
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Meeting */}
+        {step === 3 && (
           <Card>
             <CardHeader>
               <CardTitle>Create your first meeting</CardTitle>
@@ -326,8 +449,8 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 3: Availability */}
-        {step === 3 && (
+        {/* Step 4: Availability */}
+        {step === 4 && (
           <Card>
             <CardHeader>
               <CardTitle>Set your availability</CardTitle>
@@ -374,8 +497,8 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 4: Slug/Preview */}
-        {step === 4 && (
+        {/* Step 5: Slug/Preview */}
+        {step === 5 && (
           <Card>
             <CardHeader>
               <CardTitle>Choose your booking URL</CardTitle>
@@ -433,8 +556,8 @@ export default function OnboardingPage() {
           ) : (
             <div />
           )}
-          {step < 4 ? (
-            <Button onClick={handleNext}>
+          {step < 5 ? (
+            <Button onClick={handleNext} disabled={step === 2 && !calendarConnected}>
               Next
               <ArrowRight className="size-4 ml-2" />
             </Button>
@@ -447,5 +570,17 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
   )
 }
