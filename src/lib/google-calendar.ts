@@ -190,6 +190,7 @@ export async function createCalendarEvent(
     const response = await withRetry(
       () => calendar.events.insert({
         calendarId,
+        sendNotifications: true, // Send calendar invites to attendees
         conferenceDataVersion: 1, // Enable Google Meet creation
         requestBody: {
         summary: `${meetingName} with ${booking.client_name}`,
@@ -286,6 +287,7 @@ export async function deleteCalendarEvent(
     await calendar.events.delete({
       calendarId,
       eventId,
+      sendUpdates: 'all', // Notify attendees of cancellation
     })
     return true
   } catch (error) {
@@ -321,6 +323,7 @@ export async function updateCalendarEvent(
     await calendar.events.patch({
       calendarId,
       eventId,
+      sendUpdates: 'all', // Notify attendees of changes
       requestBody: {
         start: {
           dateTime: updates.start_time,
