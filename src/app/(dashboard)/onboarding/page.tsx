@@ -18,19 +18,6 @@ import { Switch } from '@/components/ui/switch'
 import { generateSlug, getTimezoneOffset } from '@/lib/utils'
 import { Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 
-const BUSINESS_CATEGORIES = [
-  'Tutoring & Education',
-  'Personal Training & Fitness',
-  'Photography',
-  'Consulting',
-  'Cleaning Services',
-  'Hair & Beauty',
-  'Health & Wellness',
-  'Music Lessons',
-  'Life Coaching',
-  'Other',
-]
-
 const DURATION_OPTIONS = [
   { value: '15', label: '15 minutes' },
   { value: '30', label: '30 minutes' },
@@ -78,9 +65,8 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Step 1: Business info
-  const [businessName, setBusinessName] = useState('')
-  const [businessCategory, setBusinessCategory] = useState('')
+  // Step 1: Name and timezone
+  const [name, setName] = useState('')
   const [timezone, setTimezone] = useState(getTimezoneOffset())
 
   // Step 2: Meeting
@@ -103,12 +89,12 @@ export default function OnboardingPage() {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
 
-  // Generate slug when business name changes
+  // Generate slug when name changes
   useEffect(() => {
-    if (businessName && !slug) {
-      setSlug(generateSlug(businessName))
+    if (name && !slug) {
+      setSlug(generateSlug(name))
     }
-  }, [businessName, slug])
+  }, [name, slug])
 
   // Check slug availability
   useEffect(() => {
@@ -138,8 +124,8 @@ export default function OnboardingPage() {
     setError(null)
 
     if (step === 1) {
-      if (!businessName.trim()) {
-        setError('Please enter your business name')
+      if (!name.trim()) {
+        setError('Please enter your name')
         return
       }
     }
@@ -190,8 +176,8 @@ export default function OnboardingPage() {
         .from('providers')
         // @ts-ignore - Supabase types not inferring correctly
         .update({
-          business_name: businessName,
-          business_category: businessCategory || null,
+          name,
+          business_name: name,
           timezone,
           slug,
         })
@@ -270,36 +256,21 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        {/* Step 1: Business Info */}
+        {/* Step 1: Name and Timezone */}
         {step === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle>Tell us about your business</CardTitle>
+              <CardTitle>Tell us about yourself</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="businessName">Business name *</Label>
+                <Label htmlFor="name">Name *</Label>
                 <Input
-                  id="businessName"
+                  id="name"
                   placeholder="e.g., Sarah's Piano Lessons"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category (optional)</Label>
-                <Select value={businessCategory} onValueChange={setBusinessCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BUSINESS_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
@@ -437,7 +408,7 @@ export default function OnboardingPage() {
               <div className="p-4 rounded-lg border bg-muted/50">
                 <p className="text-sm font-medium mb-2">Preview</p>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p><strong>Business:</strong> {businessName}</p>
+                  <p><strong>Name:</strong> {name}</p>
                   <p><strong>Meeting:</strong> {meetingName} ({meetingDuration} min)</p>
                 </div>
               </div>
