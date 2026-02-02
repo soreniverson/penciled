@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTokensFromCode, registerCalendarWatch } from '@/lib/google-calendar'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
-  const state = searchParams.get('state') // This is the user ID
+  const state = searchParams.get('state')
   const error = searchParams.get('error')
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -22,13 +23,25 @@ export async function GET(request: Request) {
     )
   }
 
+  // Verify state matches the cookie we set (CSRF protection)
+  const cookieStore = await cookies()
+  const storedState = cookieStore.get('google_oauth_state')?.value
+
+  // Clear the state cookie
+  cookieStore.delete('google_oauth_state')
+
+  if (!storedState || storedState !== state) {
+    return NextResponse.redirect(
+      `${baseUrl}/dashboard/settings/integrations?error=invalid_state`
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Verify the state matches the current user
-  if (!user || user.id !== state) {
+  if (!user) {
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/settings/integrations?error=invalid_state`
+      `${baseUrl}/dashboard/settings/integrations?error=not_authenticated`
     )
   }
 

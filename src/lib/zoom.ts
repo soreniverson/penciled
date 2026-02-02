@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Provider } from '@/types/database'
+import { withRetry, isRetryableError } from '@/lib/retry'
 
 type ZoomTokens = {
   access_token: string
@@ -190,36 +191,43 @@ export async function createZoomMeeting(
   const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))
 
   try {
-    const response = await fetch(`https://api.zoom.us/v2/users/${provider.zoom_user_id}/meetings`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+    // Use retry logic for Zoom API calls
+    const data = await withRetry(
+      async () => {
+        const response = await fetch(`https://api.zoom.us/v2/users/${provider.zoom_user_id}/meetings`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            topic: `${meetingName} with ${booking.client_name}`,
+            type: 2, // Scheduled meeting
+            start_time: startTime.toISOString(),
+            duration: durationMinutes,
+            agenda: booking.notes || `Meeting booked via penciled.fyi`,
+            settings: {
+              host_video: true,
+              participant_video: true,
+              join_before_host: false,
+              mute_upon_entry: true,
+              waiting_room: true,
+              meeting_invitees: [{ email: booking.client_email }],
+            },
+          }),
+        })
+
+        if (!response.ok) {
+          const error = await response.text()
+          const err = new Error(`Zoom meeting creation failed: ${error}`) as Error & { status: number }
+          err.status = response.status
+          throw err
+        }
+
+        return response.json()
       },
-      body: JSON.stringify({
-        topic: `${meetingName} with ${booking.client_name}`,
-        type: 2, // Scheduled meeting
-        start_time: startTime.toISOString(),
-        duration: durationMinutes,
-        agenda: booking.notes || `Meeting booked via penciled.fyi`,
-        settings: {
-          host_video: true,
-          participant_video: true,
-          join_before_host: false,
-          mute_upon_entry: true,
-          waiting_room: true,
-          meeting_invitees: [{ email: booking.client_email }],
-        },
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Zoom meeting creation failed:', error)
-      return { meetingId: null, meetingUrl: null }
-    }
-
-    const data = await response.json()
+      { maxAttempts: 3, shouldRetry: isRetryableError }
+    )
 
     // Store meeting ID in booking
     await supabase

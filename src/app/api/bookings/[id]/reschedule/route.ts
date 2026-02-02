@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendClientRescheduleConfirmation, sendRescheduleNotificationToProvider } from '@/lib/email'
 import { parseBody, rescheduleSchema, bookingIdSchema, validateParam } from '@/lib/validations'
@@ -6,6 +7,14 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { updateCalendarEvent } from '@/lib/google-calendar'
 import { updateZoomMeeting } from '@/lib/zoom'
 import { logApiError } from '@/lib/error-logger'
+
+// Untyped admin client for new tables
+function createUntypedAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -66,15 +75,28 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // Check for conflicts at the new time
+    // Get meeting buffer time for proper conflict checking
+    const { data: meetingData } = await supabase
+      .from('meetings')
+      .select('buffer_minutes')
+      .eq('id', booking.meeting_id)
+      .single() as { data: { buffer_minutes: number | null } | null }
+
+    const bufferMinutes = meetingData?.buffer_minutes || 0
+
+    // Calculate conflict window including buffer time
+    const startWithBuffer = new Date(new Date(start_time).getTime() - bufferMinutes * 60 * 1000).toISOString()
+    const endWithBuffer = new Date(new Date(end_time).getTime() + bufferMinutes * 60 * 1000).toISOString()
+
+    // Check for conflicts at the new time (with buffer)
     const { data: conflicts } = await supabase
       .from('bookings')
       .select('id')
       .eq('provider_id', booking.provider_id)
       .neq('status', 'cancelled')
       .neq('id', id) // Exclude current booking
-      .lt('start_time', end_time)
-      .gt('end_time', start_time)
+      .lt('start_time', endWithBuffer)
+      .gt('end_time', startWithBuffer)
       .limit(1)
 
     if (conflicts && conflicts.length > 0) {
@@ -181,16 +203,41 @@ export async function POST(request: Request, { params }: RouteContext) {
               providerEmail: member.email,
               rescheduledBy: 'client',
             })
-
-            // Update calendar event for each team member who has Google connected
-            if (booking.google_event_id && member.google_calendar_token) {
-              await updateCalendarEvent(member.id, booking.google_event_id, {
-                start_time,
-                end_time,
-              }).catch(err => console.error(`Calendar update failed for ${member.email}:`, err))
-            }
           })
         )
+
+        // Update calendar events using per-provider tracking
+        const untypedSupabase = createUntypedAdminClient()
+        const { data: calendarEvents } = await untypedSupabase
+          .from('booking_calendar_events')
+          .select('provider_id, google_event_id')
+          .eq('booking_id', id) as { data: { provider_id: string; google_event_id: string | null }[] | null }
+
+        if (calendarEvents && calendarEvents.length > 0) {
+          // Update events in each provider's calendar
+          await Promise.all(
+            calendarEvents
+              .filter(event => event.google_event_id)
+              .map(event =>
+                updateCalendarEvent(event.provider_id, event.google_event_id!, {
+                  start_time,
+                  end_time,
+                }).catch(err => console.error(`Calendar update failed for provider ${event.provider_id}:`, err))
+              )
+          )
+        } else if (booking.google_event_id) {
+          // Fallback to legacy single event ID (backward compatibility)
+          await Promise.all(
+            teamMembers
+              .filter(member => member.google_calendar_token)
+              .map(member =>
+                updateCalendarEvent(member.id, booking.google_event_id!, {
+                  start_time,
+                  end_time,
+                }).catch(err => console.error(`Calendar update failed for ${member.email}:`, err))
+              )
+          )
+        }
 
         // Update Zoom meeting if it exists
         if (booking.zoom_meeting_id) {

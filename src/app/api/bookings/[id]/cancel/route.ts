@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendCancellationEmailToClient, sendCancellationEmailToProvider } from '@/lib/email'
 import { parseBody, tokenActionSchema, bookingIdSchema, validateParam } from '@/lib/validations'
@@ -6,6 +7,14 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { deleteCalendarEvent } from '@/lib/google-calendar'
 import { deleteZoomMeeting } from '@/lib/zoom'
 import { logApiError } from '@/lib/error-logger'
+
+// Untyped admin client for new tables
+function createUntypedAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -148,10 +157,31 @@ export async function POST(request: Request, { params }: RouteContext) {
         )
       ).catch(err => console.error('Provider cancellation emails failed:', err))
 
-      // Delete calendar events for all team members with Google connected
-      // Note: Currently we only track one google_event_id per booking
-      // For team bookings, each member would need their own event ID tracked
-      if (booking.google_event_id) {
+      // Delete calendar events for all team members using per-provider tracking
+      const untypedSupabase = createUntypedAdminClient()
+      const { data: calendarEvents } = await untypedSupabase
+        .from('booking_calendar_events')
+        .select('provider_id, google_event_id')
+        .eq('booking_id', id) as { data: { provider_id: string; google_event_id: string | null }[] | null }
+
+      if (calendarEvents && calendarEvents.length > 0) {
+        // Delete events from each provider's calendar
+        await Promise.all(
+          calendarEvents
+            .filter(event => event.google_event_id)
+            .map(event =>
+              deleteCalendarEvent(event.provider_id, event.google_event_id!)
+                .catch(err => console.error(`Calendar deletion failed for provider ${event.provider_id}:`, err))
+            )
+        )
+
+        // Clean up the tracking records
+        await untypedSupabase
+          .from('booking_calendar_events')
+          .delete()
+          .eq('booking_id', id)
+      } else if (booking.google_event_id) {
+        // Fallback to legacy single event ID (backward compatibility)
         teamMembers
           .filter(member => member.google_calendar_token)
           .forEach(member => {

@@ -11,7 +11,7 @@ import { parseBody, createBookingWithOverridesSchema, type CreateBookingWithOver
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createCalendarEvent, getCalendarBusyTimes } from '@/lib/google-calendar'
 import { createZoomMeeting, shouldUseZoom } from '@/lib/zoom'
-import { logApiError } from '@/lib/error-logger'
+import { logApiError, logSilentFailure } from '@/lib/error-logger'
 import { getDelegationContext, hasPermission } from '@/lib/auth/delegation'
 import { assignMembersToBooking } from '@/lib/booking-assignment'
 
@@ -76,27 +76,33 @@ export async function POST(request: Request) {
       approvedByUserId = user.id
     }
 
-    // Fetch meeting to get booking mode and video platform
+    // Fetch meeting to get booking mode, video platform, and buffer time
     const { data: meetingData } = await supabase
       .from('meetings')
-      .select('booking_mode, name, video_platform')
+      .select('booking_mode, name, video_platform, buffer_minutes')
       .eq('id', meeting_id)
-      .single() as { data: { booking_mode: string | null; name: string; video_platform: 'google_meet' | 'zoom' | 'none' | 'auto' | null } | null }
+      .single() as { data: { booking_mode: string | null; name: string; video_platform: 'google_meet' | 'zoom' | 'none' | 'auto' | null; buffer_minutes: number | null } | null }
 
     const bookingMode = meetingData?.booking_mode || 'instant'
     const videoPlatform = meetingData?.video_platform || 'google_meet'
+    const bufferMinutes = meetingData?.buffer_minutes || 0
+
+    // Calculate conflict window including buffer time
+    const startWithBuffer = new Date(new Date(start_time).getTime() - bufferMinutes * 60 * 1000).toISOString()
+    const endWithBuffer = new Date(new Date(end_time).getTime() + bufferMinutes * 60 * 1000).toISOString()
 
     // Check for conflicts (unless override_conflicts is set)
     let conflictingBooking: { id: string; client_name: string; client_email: string } | null = null
 
     if (!override_conflicts) {
+      // Check for conflicts including buffer time
       const { data: conflicts } = await supabase
         .from('bookings')
         .select('id, client_name, client_email')
         .eq('provider_id', provider_id)
         .neq('status', 'cancelled')
-        .lt('start_time', end_time)
-        .gt('end_time', start_time)
+        .lt('start_time', endWithBuffer)
+        .gt('end_time', startWithBuffer)
         .limit(1)
 
       if (conflicts && conflicts.length > 0) {
@@ -106,7 +112,7 @@ export async function POST(request: Request) {
         )
       }
     } else {
-      // Get conflicting booking info for notification
+      // Get conflicting booking info for notification (with buffer)
       type ConflictResult = { id: string; client_name: string; client_email: string }
 
       const { data: conflicts } = await supabase
@@ -114,8 +120,8 @@ export async function POST(request: Request) {
         .select('id, client_name, client_email')
         .eq('provider_id', provider_id)
         .neq('status', 'cancelled')
-        .lt('start_time', end_time)
-        .gt('end_time', start_time)
+        .lt('start_time', endWithBuffer)
+        .gt('end_time', startWithBuffer)
         .limit(1) as { data: ConflictResult[] | null }
 
       if (conflicts && conflicts.length > 0) {
@@ -177,6 +183,18 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Booking creation error:', error)
+
+      // Check if this is a constraint violation (double-booking attempt)
+      const errorMessage = error.message || String(error)
+      if (errorMessage.includes('no_overlapping_bookings') ||
+          errorMessage.includes('exclusion constraint') ||
+          errorMessage.includes('conflicting key value')) {
+        return NextResponse.json(
+          { error: 'This time slot is no longer available. Please choose a different time.' },
+          { status: 409 }
+        )
+      }
+
       await logApiError(error, '/api/bookings', 'create', { provider_id, meeting_id })
       return NextResponse.json(
         { error: 'Failed to create booking' },
@@ -297,52 +315,52 @@ export async function POST(request: Request) {
             !!primaryMember.zoom_token
           )
 
-          if (useZoom && videoPlatform !== 'none') {
-            // Create Zoom meeting
-            console.log('Creating Zoom meeting...')
-            const zoomResult = await createZoomMeeting(
-              primaryMember.id,
-              {
-                id: booking.id,
-                client_name,
-                client_email,
-                start_time,
-                end_time,
-                notes,
-              },
-              meetingName
-            )
-            meetingLink = zoomResult.meetingUrl
-            console.log('Zoom meeting created:', meetingLink)
-          }
-
-          // Create Google Calendar events for all members with Google connected
-          // If no Zoom meeting was created, Google Meet link will be used
-          const calendarResults = await Promise.all(
-            teamMembers
-              .filter(member => member.google_calendar_token)
-              .map(member =>
-                createCalendarEvent(
-                  member.id,
+          // Run Zoom and Calendar creation in parallel for better performance
+          const [zoomResult, calendarResults] = await Promise.all([
+            // Create Zoom meeting if needed
+            useZoom && videoPlatform !== 'none'
+              ? createZoomMeeting(
+                  primaryMember.id,
                   {
                     id: booking.id,
                     client_name,
                     client_email,
-                    client_phone,
                     start_time,
                     end_time,
                     notes,
                   },
                   meetingName
                 )
-              )
-          )
+              : Promise.resolve({ meetingId: null, meetingUrl: null }),
+            // Create Google Calendar events for all members with Google connected
+            Promise.all(
+              teamMembers
+                .filter(member => member.google_calendar_token)
+                .map(member =>
+                  createCalendarEvent(
+                    member.id,
+                    {
+                      id: booking.id,
+                      client_name,
+                      client_email,
+                      client_phone,
+                      start_time,
+                      end_time,
+                      notes,
+                    },
+                    meetingName
+                  )
+                )
+            ),
+          ])
 
-          // If no Zoom link, get Google Meet link from calendar event
-          if (!meetingLink && videoPlatform !== 'none') {
+          // Use Zoom link if available, otherwise Google Meet link
+          if (zoomResult.meetingUrl) {
+            meetingLink = zoomResult.meetingUrl
+          } else if (videoPlatform !== 'none') {
             meetingLink = calendarResults.find(r => r.meetingLink)?.meetingLink || null
           }
-          console.log('Calendar events created, meeting link:', meetingLink)
+          console.log('Video meeting and calendar events created, meeting link:', meetingLink)
         }
 
         const baseEmailData = {
@@ -413,7 +431,16 @@ export async function POST(request: Request) {
           }).catch(err => console.error('Conflict override notification failed:', err))
         }
       } catch (err) {
-        console.error('Email/calendar error:', err)
+        // Log silent failure for monitoring - booking was created but notification/calendar failed
+        await logSilentFailure(
+          'booking_notifications',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            bookingId: booking.id,
+            provider_id,
+            meeting_id,
+          }
+        )
         // Don't fail the booking if emails fail
       }
     }

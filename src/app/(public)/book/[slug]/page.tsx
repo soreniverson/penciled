@@ -73,6 +73,7 @@ export default async function BookingPage({ params }: Props) {
   const supabase = await createClient()
 
   // Fetch meetings, availability, and blackout dates in parallel
+  // Apply reasonable limits to prevent unbounded queries
   const [meetingsResult, availabilityResult, blackoutDates] = await Promise.all([
     supabase
       .from('meetings')
@@ -80,12 +81,14 @@ export default async function BookingPage({ params }: Props) {
       .eq('provider_id', provider.id)
       .eq('is_active', true)
       .order('created_at', { ascending: true })
+      .limit(50) // Reasonable limit for meetings
       .returns<Meeting[]>(),
     supabase
       .from('availability')
       .select('*')
       .eq('provider_id', provider.id)
       .eq('is_active', true)
+      .limit(21) // 7 days * 3 possible shifts per day
       .returns<Availability[]>(),
     getProviderBlackoutDates(provider.id),
   ])

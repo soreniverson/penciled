@@ -18,11 +18,11 @@ export async function GET() {
       )
     }
 
-    // Fetch provider data
+    // Fetch provider data (provider.id = user.id since it references auth.users)
     const { data: provider } = await supabase
       .from('providers')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single() as { data: { id: string; name: string | null; business_name: string | null; email: string; slug: string; timezone: string; accent_color: string | null; created_at: string; updated_at: string } | null }
 
     if (!provider) {

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@supabase/supabase-js'
 import type { Provider } from '@/types/database'
 import { randomUUID } from 'crypto'
+import { withRetry } from '@/lib/retry'
 
 // Untyped admin client for tables/columns not in type definitions
 function createUntypedAdminClient() {
@@ -185,10 +186,12 @@ export async function createCalendarEvent(
     .join('\n')
 
   try {
-    const response = await calendar.events.insert({
-      calendarId,
-      conferenceDataVersion: 1, // Enable Google Meet creation
-      requestBody: {
+    // Use retry logic for Google Calendar API calls
+    const response = await withRetry(
+      () => calendar.events.insert({
+        calendarId,
+        conferenceDataVersion: 1, // Enable Google Meet creation
+        requestBody: {
         summary: `${meetingName} with ${booking.client_name}`,
         description,
         start: {
@@ -216,14 +219,30 @@ export async function createCalendarEvent(
           ],
         },
       },
-    })
+    }),
+    { maxAttempts: 3 }
+    )
 
     const eventId = response.data.id || null
     const meetingLink = response.data.conferenceData?.entryPoints?.find(
       (ep) => ep.entryPointType === 'video'
     )?.uri || response.data.hangoutLink || null
 
-    // Store event ID and meeting link in booking
+    // Store event ID in per-provider tracking table (for team bookings)
+    if (eventId) {
+      const untypedSupabase = createUntypedAdminClient()
+      await untypedSupabase
+        .from('booking_calendar_events')
+        .upsert({
+          booking_id: booking.id,
+          provider_id: providerId,
+          google_event_id: eventId,
+        }, {
+          onConflict: 'booking_id,provider_id',
+        })
+    }
+
+    // Also store in booking for backward compatibility (primary event)
     if (eventId || meetingLink) {
       await supabase
         .from('bookings')
@@ -235,7 +254,7 @@ export async function createCalendarEvent(
         .eq('id', booking.id)
     }
 
-    console.log('Calendar event created:', { eventId, meetingLink })
+    console.log('Calendar event created:', { eventId, meetingLink, providerId })
 
     return { eventId, meetingLink }
   } catch (error) {

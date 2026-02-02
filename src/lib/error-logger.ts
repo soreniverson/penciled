@@ -136,3 +136,44 @@ export function logInfo(
     context,
   })
 }
+
+/**
+ * Log a silent failure - when an operation fails but we continue anyway
+ * (e.g., email sending fails but booking was created)
+ */
+export function logSilentFailure(
+  operation: string,
+  error: Error | string,
+  context?: ErrorContext
+): Promise<void> {
+  return logError({
+    error: `Silent failure in ${operation}: ${error instanceof Error ? error.message : error}`,
+    severity: 'warning',
+    context: {
+      ...context,
+      silent_failure: true,
+      operation,
+    },
+  })
+}
+
+/**
+ * Wrapper to execute an operation and log if it fails silently
+ * Returns null on failure instead of throwing
+ */
+export async function withSilentFailureLogging<T>(
+  operation: string,
+  fn: () => Promise<T>,
+  context?: ErrorContext
+): Promise<T | null> {
+  try {
+    return await fn()
+  } catch (error) {
+    await logSilentFailure(
+      operation,
+      error instanceof Error ? error : new Error(String(error)),
+      context
+    )
+    return null
+  }
+}

@@ -590,6 +590,84 @@ export type Database = {
           created_at?: string
         }
       }
+      booking_calendar_events: {
+        Row: {
+          id: string
+          booking_id: string
+          provider_id: string
+          google_event_id: string | null
+          zoom_meeting_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          booking_id: string
+          provider_id: string
+          google_event_id?: string | null
+          zoom_meeting_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          booking_id?: string
+          provider_id?: string
+          google_event_id?: string | null
+          zoom_meeting_id?: string | null
+          created_at?: string
+        }
+      }
+      calendar_watches: {
+        Row: {
+          id: string
+          provider_id: string
+          channel_id: string
+          resource_id: string
+          expiration: string
+          calendar_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          provider_id: string
+          channel_id: string
+          resource_id: string
+          expiration: string
+          calendar_id?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          provider_id?: string
+          channel_id?: string
+          resource_id?: string
+          expiration?: string
+          calendar_id?: string
+          created_at?: string
+        }
+      }
+      processed_webhooks: {
+        Row: {
+          id: string
+          webhook_type: string
+          external_id: string
+          provider_id: string | null
+          processed_at: string
+        }
+        Insert: {
+          id?: string
+          webhook_type: string
+          external_id: string
+          provider_id?: string | null
+          processed_at?: string
+        }
+        Update: {
+          id?: string
+          webhook_type?: string
+          external_id?: string
+          provider_id?: string | null
+          processed_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -618,6 +696,9 @@ export type ResourcePoolMember = Database['public']['Tables']['resource_pool_mem
 export type MeetingTemplate = Database['public']['Tables']['meeting_templates']['Row']
 export type FollowUpTemplate = Database['public']['Tables']['follow_up_templates']['Row']
 export type FollowUp = Database['public']['Tables']['follow_ups']['Row']
+export type BookingCalendarEvent = Database['public']['Tables']['booking_calendar_events']['Row']
+export type CalendarWatch = Database['public']['Tables']['calendar_watches']['Row']
+export type ProcessedWebhook = Database['public']['Tables']['processed_webhooks']['Row']
 
 export type InsertProvider = Database['public']['Tables']['providers']['Insert']
 export type InsertMeeting = Database['public']['Tables']['meetings']['Insert']
@@ -634,6 +715,9 @@ export type InsertResourcePoolMember = Database['public']['Tables']['resource_po
 export type InsertMeetingTemplate = Database['public']['Tables']['meeting_templates']['Insert']
 export type InsertFollowUpTemplate = Database['public']['Tables']['follow_up_templates']['Insert']
 export type InsertFollowUp = Database['public']['Tables']['follow_ups']['Insert']
+export type InsertBookingCalendarEvent = Database['public']['Tables']['booking_calendar_events']['Insert']
+export type InsertCalendarWatch = Database['public']['Tables']['calendar_watches']['Insert']
+export type InsertProcessedWebhook = Database['public']['Tables']['processed_webhooks']['Insert']
 
 export type UpdateProvider = Database['public']['Tables']['providers']['Update']
 export type UpdateMeeting = Database['public']['Tables']['meetings']['Update']

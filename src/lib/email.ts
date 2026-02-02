@@ -1,45 +1,8 @@
 import { Resend } from 'resend'
 import { formatInTimeZone } from 'date-fns-tz'
+import { escapeHtml, sanitizeUrl, getTimezoneAbbr } from './email/helpers'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-// HTML escape to prevent XSS in email templates
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
-// Sanitize URL to prevent javascript: and data: protocols
-function sanitizeUrl(url: string): string {
-  try {
-    const parsed = new URL(url)
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      return '#'
-    }
-    return url
-  } catch {
-    return '#'
-  }
-}
-
-// Helper to get timezone abbreviation (e.g., "PST", "EST")
-function getTimezoneAbbr(timezone: string): string {
-  try {
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      timeZoneName: 'short',
-    })
-    const parts = formatter.formatToParts(new Date())
-    const tzPart = parts.find(p => p.type === 'timeZoneName')
-    return tzPart?.value || timezone
-  } catch {
-    return timezone
-  }
-}
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'penciled.fyi <noreply@penciled.fyi>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
